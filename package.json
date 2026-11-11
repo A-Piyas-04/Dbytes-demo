@@ -1,0 +1,28 @@
+{
+  "name": "doshomik-bytes-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Doshomik Bytes — clickable front-end mockup (dummy data, no backend)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "@fontsource-variable/anek-bangla": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "katex": "^0.19.1",
+    "lucide-react": "^1.71.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/katex": "^0.16.8",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^7.0.2",
+    "vite": "^5.4.21"
+  }
+}
