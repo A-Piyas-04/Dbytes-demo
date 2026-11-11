@@ -7,7 +7,7 @@ import { useStore, findPost, creatorOf, findCourse, findPaper } from '../store';
 import { compact, clock } from '../i18n';
 import { Scene, SCENE_BG } from '../scenes';
 import { Inline } from '../markdown';
-import { Avatar, Empty, FollowBtn, Name, Seg, Sheet, TopBar, TopicTag, openCreator, useInView, Btn } from '../ui';
+import { Avatar, Empty, FollowBtn, Name, Seg, Sheet, TopBar, TopicTag, openCreator, useInView, useActive, Btn } from '../ui';
 
 export function HomeScreen() {
   const s = useStore();
@@ -66,7 +66,8 @@ export function ReelCard({ r, full }: { r: Reel; full?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const [burst, setBurst] = useState(0);
   const [flash, setFlash] = useState<'mute' | 'unmute' | null>(null);
-  const playing = inView && !held && !s.sheet;
+  const active = useActive();
+  const playing = inView && active && !held && !s.sheet && !s.dialog;
   const tapTimer = useRef<number | null>(null);
   const holdTimer = useRef<number | null>(null);
 
@@ -75,7 +76,7 @@ export function ReelCard({ r, full }: { r: Reel; full?: boolean }) {
     const id = setInterval(() => setTime((t) => (t + 0.1 >= r.duration ? 0 : t + 0.1)), 100);
     return () => clearInterval(id);
   }, [playing, r.duration]);
-  useEffect(() => { if (!inView) setTime(0); }, [inView]);
+  useEffect(() => { if (!inView || !active) setTime(0); }, [inView, active]);
 
   const sub = r.subs[Math.min(r.subs.length - 1, Math.floor((time / r.duration) * r.subs.length))];
   const liked = s.likes.has(r.id);

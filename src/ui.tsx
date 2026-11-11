@@ -1,4 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+
+export const ActiveCtx = createContext(true);
+export const useActive = () => useContext(ActiveCtx);
 import { ArrowLeft, BadgeCheck, Bell, Check, FileText, Image as ImageIcon, Images, Play, Plus, Video, Layers } from 'lucide-react';
 import { useStore, creatorOf } from './store';
 import { TOPICS, type Creator, type TopicId, type LessonType } from './data';
@@ -154,7 +157,7 @@ export function CreatorRow({ id, sub, right, onClick }: { id: string; sub?: Reac
         <Avatar c={c} size={44} />
         <span className="creator-row-text">
           <Name c={c} />
-          <span className="sub">{sub ?? c.bio && s.x(c.bio)}</span>
+          <span className="sub">{sub ?? s.x(c.bio)}</span>
         </span>
       </button>
       {right}

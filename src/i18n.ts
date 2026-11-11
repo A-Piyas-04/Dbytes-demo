@@ -92,6 +92,8 @@ const S = {
   done: ['Done', 'ঠিক আছে'],
   questions: ['questions', 'প্রশ্ন'],
   quizSets: ['Quiz sets', 'কুইজ সেট'],
+  quiz1: ['quiz', 'কুইজ'],
+  quizN: ['quizzes', 'কুইজ'],
   greatJob: ['Great job', 'দারুণ'],
   keepGoing: ['Keep practicing', 'প্র্যাকটিস চালিয়ে যান'],
   allCorrect: ['All correct', 'সব সঠিক'],
@@ -316,7 +318,8 @@ export const compact = (lang: Lang, n: number) => {
 export const duration = (lang: Lang, mins: number) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  const out = h ? `${h}${tr(lang, 'hoursShort')} ${m ? `${m}${tr(lang, 'min')}` : ''}` : `${m} ${tr(lang, 'min')}`;
+  const mShort = lang === 'en' ? 'm' : tr(lang, 'min');
+  const out = h ? `${h}${tr(lang, 'hoursShort')} ${m ? `${m}${mShort}` : ''}` : `${m} ${tr(lang, 'min')}`;
   return digits(lang, out.trim());
 };
 
