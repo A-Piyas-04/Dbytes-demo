@@ -7,6 +7,8 @@ import { useStore, creatorOf, findCourse } from '../store';
 import { compact, digits } from '../i18n';
 import { Avatar, Btn, Chip, CreatorRow, Empty, FollowBtn, Header, Name, Progress, Seg, Sheet, Stat, Toggle, KindIcon } from '../ui';
 import { PaperCard, Tile, openPost } from './explore';
+import { ProBadge } from './tools';
+import { BookOpenCheck, Gem } from 'lucide-react';
 import { CourseRow, courseProgress } from './learn';
 import { Scene, SCENE_BG } from '../scenes';
 
@@ -56,6 +58,13 @@ function ProfileView({ id }: { id: string }) {
           </div>
           <Name c={c} className="ph-name" />
           <div className="ph-bio">{s.x(c.bio)}</div>
+          {own && (
+            <button className={`plan-row tap ${s.plan}`} onClick={() => s.push(s.plan === 'premium' ? 'subscription' : 'premium', {})}>
+              {s.plan === 'premium' ? <ProBadge sm /> : <span className="free-badge sm">{s.tt('Free plan', 'ফ্রি প্ল্যান')}</span>}
+              <span>{s.plan === 'premium' ? s.tt('Manage subscription', 'সাবস্ক্রিপশন ম্যানেজ') : s.tt('More AI research tools with Premium', 'প্রিমিয়ামে আরও এআই রিসার্চ টুল')}</span>
+              <ChevronRight size={16} className="muted" />
+            </button>
+          )}
           <div className="ph-actions">
             {own ? (
               <Btn variant="secondary" block onClick={() => s.push('editProfile')}>{s.t('editProfile')}</Btn>
@@ -70,6 +79,7 @@ function ProfileView({ id }: { id: string }) {
             <div className="ph-shortcuts">
               <button className="shortcut tap" onClick={() => s.push('saved')}><Bookmark size={20} /><span>{s.t('savedItems')}</span></button>
               <button className="shortcut tap" onClick={() => s.push('progress')}><TrendingUp size={20} /><span>{s.t('progress')}</span></button>
+              <button className="shortcut tap" onClick={() => { s.setResearchSeg('library'); s.push('researchHub'); }}><BookOpenCheck size={20} /><span>{s.tt('Reading', 'পড়া')}</span></button>
               <button className="shortcut tap" onClick={() => s.push('followList', { id: 'me', type: 'following' })}><Users size={20} /><span>{s.t('following')}</span></button>
             </div>
           )}
@@ -131,7 +141,7 @@ export function FollowListScreen({ id, type }: { id: string; type: 'followers' |
       <div className="pad-x"><Seg options={[{ id: 'followers', label: s.t('followers') }, { id: 'following', label: s.t('following') }]} value={seg} onChange={setSeg} variant="tabs" /></div>
       <div className="scroll pad">
         {ids.length ? ids.map((cid) => <CreatorRow key={cid} id={cid} sub={`@${creatorOf(s, cid).handle}`} right={<FollowBtn id={cid} />} />) : (
-          <Empty icon={<Users size={28} />} title={s.t('noFollows')} action={<Btn onClick={() => { s.setExploreSeg('creators'); s.setTab('explore'); }}>{s.t('exploreCreators')}</Btn>} />
+          <Empty icon={<Users size={28} />} title={s.t('noFollows')} action={<Btn onClick={() => s.goExplore('creators')}>{s.t('exploreCreators')}</Btn>} />
         )}
       </div>
     </div>
@@ -288,6 +298,9 @@ export function SettingsScreen() {
           <Row icon={<Mail size={19} />} label={s.t('account')} onClick={() => s.push('setAccount')} />
           <Row icon={<Bell size={19} />} label={s.t('notifications')} onClick={() => s.push('setNotif')} />
           <Row icon={<Shield size={19} />} label={s.t('privacy')} onClick={() => s.push('setPrivacy')} />
+        </div>
+        <div className="set-group">
+          <Row icon={<Gem size={19} />} label={s.tt('Subscription', 'সাবস্ক্রিপশন')} value={s.plan === 'premium' ? 'Premium' : s.tt('Free', 'ফ্রি')} onClick={() => s.push('subscription')} />
         </div>
         <div className="set-group">
           <Row icon={<CircleAlert size={19} />} label={s.t('reportProblem')} onClick={() => s.push('setReport')} />

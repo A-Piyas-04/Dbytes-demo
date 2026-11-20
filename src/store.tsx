@@ -4,8 +4,26 @@ import {
   type Comment, type ContentLang, type Course, type Creator, type Lang, type Paper, type Post, type TopicId,
 } from './data';
 import { tr, tx, type Key } from './i18n';
+import { NEW_PAPERS, LIMITS, type Plan, type ToolId } from './research/data';
 
-export type Tab = 'home' | 'explore' | 'learn' | 'profile';
+export type NavMode = 'v2' | 'classic';
+export interface ReadState { step: 0 | 1 | 2 | 3; note: string; when: string }
+export interface Output { id: string; tool: ToolId; when: string; plan: Plan; params: Record<string, any>; cached?: boolean }
+const seedUsage = (): Record<Plan, Record<ToolId, number>> => ({
+  free: { landscape: 0, compare: 1, claim: 0, roadmap: 0 },
+  premium: { landscape: 1, compare: 2, claim: 3, roadmap: 0 },
+});
+const seedReading = (): Record<string, ReadState> => ({
+  p5: { step: 2, note: 'Rank 8 on q, v is enough. Try on RoBERTa-base in Colab.', when: 'Nov 18' },
+  p1: { step: 1, note: '', when: 'Nov 15' },
+  p9: { step: 1, note: '', when: 'Nov 19' },
+  p2: { step: 3, note: 'Reproduced the GSM8K prompt trick with a small open model. Gains were tiny, as the paper predicts.', when: 'Nov 9' },
+});
+const seedOutputs = (): Output[] => [
+  { id: 'o1', tool: 'compare', when: 'Nov 8', plan: 'free', params: { papers: ['p5', 'p12', 'p13'] } },
+];
+
+export type Tab = 'home' | 'explore' | 'learn' | 'profile' | 'practice' | 'research';
 export interface Screen { key: number; name: string; params: Record<string, any> }
 export interface Sheet { name: string; params?: Record<string, any> }
 export interface Dialog {
@@ -26,12 +44,13 @@ export interface DemoFlags {
 const IMMERSIVE = new Set([
   'reel', 'quiz', 'quizResult', 'lesson', 'dm',
   'createReel', 'createPhoto', 'createNote', 'createCourse', 'createResearch', 'published',
+  'figures', 'tool', 'job', 'premium', 'paySuccess',
 ]);
 export const isImmersive = (name?: string) => !!name && IMMERSIVE.has(name);
 
 let keySeq = 1;
 const mkScreen = (name: string, params: Record<string, any> = {}): Screen => ({ key: keySeq++, name, params });
-const emptyStacks = (): Record<Tab, Screen[]> => ({ home: [], explore: [], learn: [], profile: [] });
+const emptyStacks = (): Record<Tab, Screen[]> => ({ home: [], explore: [], learn: [], profile: [], practice: [], research: [] });
 
 const seedDone = (): Record<string, string[]> => ({
   c1: COURSES[0].lessons.slice(0, 6).map((l) => l.id),
@@ -48,6 +67,8 @@ function useStoreValue() {
   const [lang, setLangState] = useState<Lang>(() => (localStorage.getItem('db.lang') as Lang) || 'en');
   const setLang = (l: Lang) => { setLangState(l); localStorage.setItem('db.lang', l); };
   const t = useCallback((k: Key) => tr(lang, k), [lang]);
+  /** Inline bilingual string: tt('English', 'বাংলা'). */
+  const tt = useCallback((en: string, bn: string) => (lang === 'bn' ? bn : en), [lang]);
   const x = useCallback((v: Parameters<typeof tx>[1]) => tx(lang, v), [lang]);
 
   const [authed, setAuthed] = useState(true);
@@ -186,7 +207,7 @@ function useStoreValue() {
   const [exploreTopic, setExploreTopic] = useState<TopicId | null>(null);
 
   const allPosts = useMemo(() => [...myPosts, ...allBasePosts], [myPosts]);
-  const allPapers = useMemo(() => [...myPapers, ...PAPERS], [myPapers]);
+  const allPapers = useMemo(() => [...myPapers, ...PAPERS, ...NEW_PAPERS], [myPapers]);
   const allCourses = useMemo(() => [...myCourses, ...COURSES], [myCourses]);
 
   const langOk = (l: ContentLang) =>
@@ -194,7 +215,40 @@ function useStoreValue() {
   const visible = (p: { id: string; creatorId: string; lang: ContentLang }) =>
     !hiddenPosts.has(p.id) && !blocked.includes(p.creatorId) && langOk(p.lang);
 
+  // research v2 + plans
+  const [navMode, setNavMode] = useState<NavMode>('v2');
+  const [plan, setPlanState] = useState<Plan>('free');
+  const [usage, setUsage] = useState(seedUsage);
+  const [aiPaused, setAiPaused] = useState(false);
+  const [reading, setReadingState] = useState<Record<string, ReadState>>(seedReading);
+  const [known, setKnown] = useState<Set<string>>(() => new Set());
+  const [outputs, setOutputs] = useState<Output[]>(seedOutputs);
+  const [clubs, setClubs] = useState<Set<string>>(() => new Set(['club2']));
+  const [figAnswers, setFigAnswers] = useState<Record<string, number>>({});
+  const [payMethod, setPayMethod] = useState<'bkash' | 'nagad' | 'card'>('bkash');
+  const setPlan = (p: Plan) => setPlanState(p);
+  const left = (tool: ToolId) => Math.max(0, LIMITS[plan][tool] - usage[plan][tool]);
+  const spend = (tool: ToolId) => setUsage((u) => ({ ...u, [plan]: { ...u[plan], [tool]: u[plan][tool] + 1 } }));
+  const resetUsage = () => setUsage({ free: { landscape: 0, compare: 0, claim: 0, roadmap: 0 }, premium: { landscape: 0, compare: 0, claim: 0, roadmap: 0 } });
+  const addOutput = (o: Output) => setOutputs((x) => [o, ...x]);
+  const setReading = (id: string, patch: Partial<ReadState>) =>
+    setReadingState((r) => ({ ...r, [id]: { ...(r[id] || { step: 0, note: '' }), ...patch, when: 'Nov 20' } }));
+  const [researchSeg, setResearchSeg] = useState<'discover' | 'tools' | 'library'>('discover');
+  const markKnown = (id: string) => setKnown((k) => new Set(k).add(id));
+  const toggleKnown = (id: string) => setKnown((k) => { const n = new Set(k); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleClub = (id: string) => setClubs((k) => { const n = new Set(k); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const answerFig = (k: string, v: number) => setFigAnswers((a) => ({ ...a, [k]: v }));
+  /** Open Explore (classic: switch tab; v2: push it on the current stack). */
+  const goExplore = (seg?: 'trending' | 'research' | 'creators', topic?: TopicId | null) => {
+    if (seg) setExploreSeg(seg);
+    if (topic !== undefined) setExploreTopic(topic);
+    if (navMode === 'classic') setTab('explore');
+    else push('explore');
+  };
+  const openPractice = () => (navMode === 'v2' ? setTab('practice') : push('practice'));
+
   const resetDemo = () => {
+    setUsage(seedUsage()); setReadingState(seedReading()); setKnown(new Set()); setOutputs(seedOutputs()); setClubs(new Set(['club2'])); setFigAnswers({}); setAiPaused(false); setResearchSeg('discover');
     setFollows([]); setLikes(new Set(['r2', 'n2'])); setSaves(new Set(['i1', 'p1', 'n1', 'c3']));
     setHiddenPosts(new Set()); setBlocked(['spam.bot']); setExtraComments({});
     setMe(ME); setMyPosts(MY_POSTS_SEED); setMyPapers(MY_PAPERS_SEED); setMyCourses([]);
@@ -204,7 +258,10 @@ function useStoreValue() {
   };
 
   return {
-    lang, setLang, t, x,
+    lang, setLang, t, x, tt,
+    navMode, setNavMode, plan, setPlan, usage, left, spend, resetUsage, aiPaused, setAiPaused,
+    reading, setReading, known, toggleKnown, markKnown, researchSeg, setResearchSeg, outputs, addOutput, clubs, toggleClub, figAnswers, answerFig, payMethod, setPayMethod,
+    goExplore, openPractice,
     authed, setAuthed, admin, setAdmin,
     tab, setTab, stacks, current, leaving, push, replace, back, popTo, jump,
     sheet, setSheet, dialog, setDialog, toastMsg, toast,

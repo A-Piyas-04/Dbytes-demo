@@ -38,7 +38,7 @@ export function HomeScreen() {
               {['nusrat', 'farhana', 'sadia'].map((id) => <Avatar key={id} c={creatorOf(s, id)} size={44} ring />)}
             </div>
             <div className="prompt-title">{s.t('noFollows')}</div>
-            <Btn icon={<Users size={18} />} onClick={() => { s.setExploreSeg('creators'); s.setTab('explore'); }}>{s.t('exploreCreators')}</Btn>
+            <Btn icon={<Users size={18} />} onClick={() => s.goExplore('creators')}>{s.t('exploreCreators')}</Btn>
           </div>
         ) : (
           items.map((p) => <FeedItem key={p.id} p={p} />)

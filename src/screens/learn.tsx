@@ -43,7 +43,7 @@ export function LearnScreen() {
               <span className="qc-pct">{digits(s.lang, Math.round(pct * 100))}% {s.t('complete')}</span>
             </span>
           </button>
-          <button className="quick-card practice tap" onClick={() => s.push('practice')}>
+          <button className="quick-card practice tap" onClick={s.openPractice}>
             <span className="qc-icon"><Target size={22} /></span>
             <span className="qc-title">{s.t('practice')}</span>
             <span className="qc-sub">{s.t('practiceSub')}</span>
@@ -271,12 +271,21 @@ export function LessonViewer({ course, lesson }: { course: string; lesson: strin
 
 const TOPIC_HUE: Record<TopicId, number> = { ml: 260, dl: 210, nn: 168, tf: 330, genai: 290, llm: 172, agents: 24, research: 140 };
 
-export function PracticeScreen() {
+export function PracticeScreen({ root }: { root?: boolean }) {
   const s = useStore();
+  const recent = s.quizHistory[0];
   return (
     <div className="screen-col">
-      <Header title={s.t('practice')} />
+      {root ? <TopBar /> : <Header title={s.t('practice')} />}
       <div className="scroll pad">
+        {root && <div className="sec-head" style={{ marginTop: 0 }}><h2>{s.t('practice')}</h2><span className="sub">{s.t('practiceSub')}</span></div>}
+        {root && recent && (
+          <button className="quiz-row tap" style={{ marginBottom: 14 }} onClick={() => s.push('quiz', { id: recent.setId })}>
+            <span className="qr-icon"><RotateCcw size={20} /></span>
+            <span className="qr-body"><span className="qr-title">{s.tt('Retry your last quiz', 'শেষ কুইজ আবার দিন')}</span><span className="qr-meta">{s.x(QUIZZES.find((q) => q.id === recent.setId)!.title)} <span className="dot-sep" /> {digits(s.lang, recent.score)}/{digits(s.lang, recent.total)}</span></span>
+            <ChevronRight size={18} className="muted" />
+          </button>
+        )}
         <div className="topic-grid">
           {TOPICS.map((tp) => {
             const sets = QUIZZES.filter((q) => q.topic === tp.id);

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 
 export const ActiveCtx = createContext(true);
 export const useActive = () => useContext(ActiveCtx);
-import { ArrowLeft, BadgeCheck, Bell, Check, FileText, Image as ImageIcon, Images, Play, Plus, Video, Layers } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Bell, Check, FileText, Image as ImageIcon, Images, Play, Plus, Video, Layers, Search, SquarePlus } from 'lucide-react';
 import { useStore, creatorOf } from './store';
 import { TOPICS, type Creator, type Lang, type TopicId, type LessonType } from './data';
 import { digits } from './i18n';
@@ -76,14 +76,25 @@ export function LangToggle() {
   );
 }
 
-export function TopBar({ children }: { children?: React.ReactNode }) {
+export function TopBar({ children, noSearch }: { children?: React.ReactNode; noSearch?: boolean }) {
   const s = useStore();
   const unread = !s.activityRead && s.activity.some((a) => a.unread);
+  const v2 = s.navMode === 'v2';
   return (
     <header className="topbar">
-      <Wordmark size={30} />
+      <Wordmark size={v2 ? 27 : 30} />
       <div className="topbar-right">
         <LangToggle />
+        {v2 && !noSearch && (
+          <button className="icon-btn tap" onClick={() => s.push('explore')} aria-label={s.tt('Search', 'খুঁজুন')}>
+            <Search size={21} />
+          </button>
+        )}
+        {v2 && (
+          <button className="icon-btn tap" onClick={() => s.setSheet({ name: 'create' })} aria-label={s.t('create')}>
+            <SquarePlus size={22} />
+          </button>
+        )}
         <button className="icon-btn tap" onClick={() => s.push('activity')} aria-label={s.t('activity')}>
           <Bell size={22} />
           {unread && <span className="badge-dot" />}
@@ -149,7 +160,7 @@ export function TopicTag({ id, onDark }: { id: TopicId; onDark?: boolean }) {
   return (
     <button
       className={`topic-tag tap ${onDark ? 'dark' : ''}`}
-      onClick={(e) => { e.stopPropagation(); s.setExploreTopic(id); s.setExploreSeg('trending'); s.setTab('explore'); }}
+      onClick={(e) => { e.stopPropagation(); s.goExplore('trending', id); }}
     >
       #{tp.tag}
     </button>

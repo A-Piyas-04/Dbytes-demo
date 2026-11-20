@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { BarChart3, ClipboardList, Flag, LayoutDashboard, Search, Smartphone, Users, Ban, PauseCircle, Check, Trash2, TriangleAlert, X, FileText, Clapperboard, MessageCircle, Images } from 'lucide-react';
+import { BarChart3, ClipboardList, Flag, LayoutDashboard, Search, Smartphone, Users, Ban, PauseCircle, Check, Trash2, TriangleAlert, X, FileText, Clapperboard, MessageCircle, Images, Sparkles } from 'lucide-react';
+import { COSTS, TOOL_META } from './research/content';
+import { LIMITS } from './research/data';
 import { CREATORS } from './data';
 import { useStore } from './store';
 import { Avatar, Wordmark } from './ui';
 
-type Section = 'overview' | 'users' | 'reports' | 'log';
+type Section = 'overview' | 'users' | 'reports' | 'log' | 'ai';
 type Status = 'active' | 'suspended' | 'banned';
 
 const USERS = [
@@ -56,6 +58,7 @@ export function Admin() {
     ['users', <Users size={18} />, 'Users'],
     ['reports', <Flag size={18} />, 'Reports', reports.length],
     ['log', <ClipboardList size={18} />, 'Moderation log'],
+    ['ai', <Sparkles size={18} />, 'AI costs'],
   ];
   const max = Math.max(...DAU);
 
@@ -182,6 +185,8 @@ export function Admin() {
           </>
         )}
 
+        {sec === 'ai' && <AiCosts />}
+
         {sec === 'log' && (
           <>
             <h1>Moderation log</h1>
@@ -197,5 +202,53 @@ export function Admin() {
         )}
       </main>
     </div>
+  );
+}
+
+function AiCosts() {
+  const s = useStore();
+  const pct = COSTS.spent / COSTS.budget;
+  const perOpen = (0.012 * COSTS.cardsGenerated) / COSTS.cardOpens;
+  return (
+    <>
+      <h1>AI costs, November</h1>
+      <div className="adm-stats">
+        <div className="adm-stat"><span>AI spend this month</span><b>${COSTS.spent.toFixed(0)}</b><em>of ${COSTS.budget} budget</em></div>
+        <div className="adm-stat"><span>Paper Cards generated</span><b>{COSTS.cardsGenerated}</b><em>once each, then cached</em></div>
+        <div className="adm-stat"><span>Paper Card opens</span><b>{COSTS.cardOpens.toLocaleString()}</b><em>${perOpen.toFixed(6)} per open</em></div>
+        <div className="adm-stat"><span>Premium users</span><b>214</b><em>1.7% of active users</em></div>
+      </div>
+      <div className="adm-grid">
+        <section className="adm-card">
+          <h2><BarChart3 size={18} /> Research tool jobs</h2>
+          <table className="adm-table">
+            <thead><tr><th>Tool</th><th>Runs</th><th>Avg cost</th><th>Max cost</th><th>Cache hits</th><th>Free / Premium cap</th></tr></thead>
+            <tbody>
+              {COSTS.perTool.map((t) => (
+                <tr key={t.tool}>
+                  <td><b>{TOOL_META[t.tool].short.en}</b></td>
+                  <td>{t.runs}</td>
+                  <td>${t.avg.toFixed(2)}</td>
+                  <td>${t.max.toFixed(2)}</td>
+                  <td>{Math.round(t.cacheHits * 100)}%</td>
+                  <td>{LIMITS.free[t.tool]} / {LIMITS.premium[t.tool]} per month</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="adm-note">Price Premium on the realistic maximum, not the average: a Premium user who uses every allowance at max cost costs about ${(COSTS.perTool.reduce((a, t) => a + t.max * LIMITS.premium[t.tool], 0)).toFixed(2)} a month.</p>
+        </section>
+        <section className="adm-card">
+          <h2>Monthly AI budget</h2>
+          <div className="adm-budget"><i style={{ width: `${Math.min(100, pct * 100)}%` }} className={pct > 0.85 ? 'hot' : ''} /></div>
+          <div className="adm-budget-row"><span>${COSTS.spent.toFixed(2)} used</span><span>${(COSTS.budget - COSTS.spent).toFixed(2)} left</span></div>
+          <div className="adm-toggle">
+            <div><b>Pause optional AI jobs</b><small>Landscape maps, comparisons, claim checks and roadmaps. Reading features keep working.</small></div>
+            <button className={`switch ${s.aiPaused ? 'on' : ''}`} role="switch" aria-checked={s.aiPaused} aria-label="Pause optional AI jobs" onClick={() => { s.setAiPaused(!s.aiPaused); s.toast(s.aiPaused ? 'AI jobs resumed' : 'AI jobs paused'); }}><span /></button>
+          </div>
+          <p className="adm-note">Jobs pause automatically when the budget is reached. Users see a clear notice, and their allowance is not used.</p>
+        </section>
+      </div>
+    </>
   );
 }

@@ -5,6 +5,8 @@ import { useStore, creatorOf, type Store } from '../store';
 import { compact } from '../i18n';
 import { Scene, SCENE_BG } from '../scenes';
 import { Chip, CreatorRow, FollowBtn, KindIcon, Seg, TopBar, TopicChips, Empty, Header, Avatar, Name } from '../ui';
+import { PaperItem, ResearchHubBanner } from './research';
+import { PX } from '../research/data';
 
 const thumbScene = (p: Post) => (p.kind === 'reel' ? p.scene : p.kind === 'image' ? p.slides[0].scene : null);
 
@@ -81,7 +83,7 @@ export function useSearch(q: string) {
   }, [q, s.allPosts, s.allPapers, s.visible]);
 }
 
-export function ExploreScreen() {
+export function ExploreScreen({ pushed }: { pushed?: boolean }) {
   const s = useStore();
   const [q, setQ] = useState('');
   const [focus, setFocus] = useState(false);
@@ -107,7 +109,7 @@ export function ExploreScreen() {
 
   return (
     <div className="screen-col">
-      <TopBar />
+      {pushed ? <Header title={s.tt('Search', 'খুঁজুন')} /> : <TopBar />}
       <div className="search-wrap">
         <label className={`search ${focus ? 'focus' : ''}`}>
           <Search size={19} aria-hidden="true" />
@@ -162,7 +164,7 @@ export function ExploreScreen() {
             trending.length ? <div className="grid3">{trending.map((p) => <Tile key={p.id} p={p} />)}</div> : <Empty icon={<Search size={28} />} title={s.t('noResults')} />
           )}
           {seg === 'research' && (
-            <div className="list pad">{papers.length ? papers.map((p) => <PaperCard key={p.id} p={p} />) : <Empty icon={<Search size={28} />} title={s.t('noResults')} />}</div>
+            <div className="list pad"><ResearchHubBanner />{papers.length ? papers.map((p) => (PX[p.id] ? <PaperItem key={p.id} id={p.id} /> : <PaperCard key={p.id} p={p} />)) : <Empty icon={<Search size={28} />} title={s.t('noResults')} />}</div>
           )}
           {seg === 'creators' && (
             <div className="list pad">

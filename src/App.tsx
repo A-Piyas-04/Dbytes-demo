@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { BatteryFull, Compass, GraduationCap, House, Plus, SignalHigh, WifiHigh, RotateCcw, LayoutDashboard, CheckCircle2 } from 'lucide-react';
+import { BatteryFull, Compass, GraduationCap, House, Plus, SignalHigh, WifiHigh, RotateCcw, LayoutDashboard, CheckCircle2, Clapperboard, Target, FlaskConical } from 'lucide-react';
 import { useStore, isImmersive, type Screen, type Tab } from './store';
 import { ActiveCtx, Avatar, LogoMark, Wordmark } from './ui';
 import { HomeScreen, CommentsSheet, ShareSheet, MoreSheet, ReportSheet } from './screens/home';
@@ -12,13 +12,30 @@ import {
 import { CreateSheet, CreateReel, CreatePhoto, CreateNote, CreateCourse, CreateResearch, PublishedScreen } from './screens/create';
 import { ActivityScreen, NoteReader, PaperDetail, PostDetail, ReelPlayer, SignIn } from './screens/misc';
 import { Admin } from './admin';
+import { ResearchHome, PaperCardScreen, FigureReader, PrereqScreen, ReviewsScreen, PathScreen, ClubsScreen, ClubScreen, NoteSheet } from './screens/research';
+import { ToolSetup, JobScreen, OutputScreen, LimitSheet, PausedSheet, PremiumScreen, CheckoutSheet, PaySuccess, SubscriptionScreen } from './screens/tools';
+import { PX } from './research/data';
 
 function renderScreen(sc: Screen) {
   const p = sc.params as any;
   switch (sc.name) {
     case 'activity': return <ActivityScreen />;
     case 'note': return <NoteReader id={p.id} />;
-    case 'paper': return <PaperDetail id={p.id} />;
+    case 'paper': return PX[p.id] ? <PaperCardScreen id={p.id} tab={p.tab} /> : <PaperDetail id={p.id} />;
+    case 'explore': return <ExploreScreen pushed />;
+    case 'researchHub': return <ResearchHome pushed />;
+    case 'figures': return <FigureReader key={sc.key} id={p.id} i={p.i} />;
+    case 'prereqs': return <PrereqScreen id={p.id} />;
+    case 'reviews': return <ReviewsScreen id={p.id} />;
+    case 'path': return <PathScreen id={p.id} />;
+    case 'clubs': return <ClubsScreen />;
+    case 'club': return <ClubScreen id={p.id} />;
+    case 'tool': return <ToolSetup key={sc.key} tool={p.tool} paper={p.paper} papers={p.papers} />;
+    case 'job': return <JobScreen key={sc.key} tool={p.tool} params={p.params} outId={p.outId} />;
+    case 'output': return <OutputScreen id={p.id} />;
+    case 'premium': return <PremiumScreen from={p.from} />;
+    case 'paySuccess': return <PaySuccess from={p.from} />;
+    case 'subscription': return <SubscriptionScreen />;
     case 'post': return <PostDetail id={p.id} />;
     case 'reel': return <ReelPlayer id={p.id} />;
     case 'creator': return <CreatorScreen id={p.id} />;
@@ -57,7 +74,10 @@ const ROOTS: Record<Tab, () => React.ReactElement> = {
   explore: () => <ExploreScreen />,
   learn: () => <LearnScreen />,
   profile: () => <ProfileScreen />,
+  practice: () => <PracticeScreen root />,
+  research: () => <ResearchHome />,
 };
+const ALL_TABS: Tab[] = ['home', 'explore', 'learn', 'profile', 'practice', 'research'];
 
 function TabLayer({ tab }: { tab: Tab }) {
   const s = useStore();
@@ -90,7 +110,14 @@ function TabLayer({ tab }: { tab: Tab }) {
 
 function BottomNav() {
   const s = useStore();
-  const items: { id: Tab | 'create'; icon: React.ReactNode; label: string }[] = [
+  const v2 = s.navMode === 'v2';
+  const items: { id: Tab | 'create'; icon: React.ReactNode; label: string }[] = v2 ? [
+    { id: 'home', icon: <Clapperboard size={23} />, label: s.tt('Reels', 'রিল') },
+    { id: 'learn', icon: <GraduationCap size={25} />, label: s.t('learn') },
+    { id: 'practice', icon: <Target size={23} />, label: s.t('practice') },
+    { id: 'research', icon: <FlaskConical size={23} />, label: s.t('research') },
+    { id: 'profile', icon: <Avatar c={s.me} size={26} />, label: s.t('profile') },
+  ] : [
     { id: 'home', icon: <House size={24} />, label: s.t('home') },
     { id: 'explore', icon: <Compass size={24} />, label: s.t('explore') },
     { id: 'create', icon: <Plus size={28} strokeWidth={2.6} />, label: s.t('create') },
@@ -128,6 +155,10 @@ function Sheets() {
     case 'more': return <MoreSheet id={id} />;
     case 'report': return <ReportSheet />;
     case 'creatorMore': return <CreatorMoreSheet id={id} />;
+    case 'note': return <NoteSheet id={id} />;
+    case 'limit': return <LimitSheet tool={s.sheet.params!.tool} />;
+    case 'paused': return <PausedSheet />;
+    case 'checkout': return <CheckoutSheet from={s.sheet.params?.from} />;
     default: return null;
   }
 }
@@ -182,18 +213,19 @@ function Splash({ onDone }: { onDone: () => void }) {
 
 function PhoneApp() {
   const s = useStore();
-  const [splash, setSplash] = useState(true);
+  const [splash, setSplash] = useState(() => { const q = new URLSearchParams(location.search); return !q.has('jump') && !q.has('screen'); });
   const cur = s.current;
   const showNav = !isImmersive(cur?.name) && !(s.leaving && isImmersive(s.leaving.name) && !cur);
   const darkTop = cur?.name === 'reel' || (cur?.name === 'createReel');
+  const inkTop = cur?.name === 'job';
   return (
-    <div className={`app ${darkTop ? 'dark-top' : ''}`}>
+    <div className={`app ${darkTop ? 'dark-top' : ''} ${inkTop ? 'ink-top' : ''}`}>
       <StatusBar />
       <div className="app-body">
         {splash ? <Splash onDone={() => setSplash(false)} /> : !s.authed ? <SignIn /> : (
           <>
             <div className="tabs">
-              {(['home', 'explore', 'learn', 'profile'] as Tab[]).map((t) => <TabLayer key={t} tab={t} />)}
+              {ALL_TABS.map((t) => <TabLayer key={t} tab={t} />)}
             </div>
             {showNav && <BottomNav />}
             <Sheets />
@@ -207,29 +239,93 @@ function PhoneApp() {
   );
 }
 
+function useJumps() {
+  const s = useStore();
+  const v2 = s.navMode === 'v2';
+  const rs = (seg: 'discover' | 'tools' | 'library', screens: [string, Record<string, any>?][] = []) => {
+    s.setResearchSeg(seg);
+    if (v2) s.jump('research', screens);
+    else { s.setExploreSeg('research'); s.jump('explore', [['researchHub'], ...screens]); }
+  };
+  const app: [string, () => void][] = [
+    ['Home feed', () => s.jump('home')],
+    ['Reel player', () => s.jump('home', [['reel', { id: 'r1' }]])],
+    ['Note reader', () => s.jump('home', [['note', { id: 'n2' }]])],
+    ['Activity', () => s.jump('home', [['activity']])],
+    ['Explore', () => (v2 ? s.jump('home', [['explore']]) : s.jump('explore'))],
+    ['Create menu', () => { s.jump('home'); setTimeout(() => s.setSheet({ name: 'create' }), 50); }],
+    ['Learn', () => s.jump('learn')],
+    ['Course', () => s.jump('learn', [['course', { id: 'c1' }]])],
+    ['Practice', () => (v2 ? s.jump('practice') : s.jump('learn', [['practice']]))],
+    ['Profile', () => s.jump('profile')],
+    ['Creator profile', () => s.jump('home', [['creator', { id: 'farhana' }]])],
+    ['Settings', () => s.jump('profile', [['settings']])],
+    ['Sign in', () => { s.jump('home'); setTimeout(() => s.setAuthed(false), 30); }],
+  ];
+  const research: [string, () => void][] = [
+    ['Research home', () => rs('discover')],
+    ['Paper Card', () => rs('discover', [['paper', { id: 'p5' }]])],
+    ['Figure reader', () => rs('discover', [['paper', { id: 'p1', tab: 'figures' }], ['figures', { id: 'p1', i: 0 }]])],
+    ['Learn before reading', () => rs('discover', [['paper', { id: 'p1' }], ['prereqs', { id: 'p1' }]])],
+    ['Reading tracker', () => rs('library')],
+    ['Related papers', () => rs('discover', [['paper', { id: 'p1', tab: 'related' }]])],
+    ['Reading path', () => rs('discover', [['path', { id: 'path2' }]])],
+    ['Reviews', () => rs('discover', [['paper', { id: 'p5', tab: 'discuss' }], ['reviews', { id: 'p5' }]])],
+    ['Paper club', () => rs('discover', [['clubs'], ['club', { id: 'club1' }]])],
+    ['Research tools', () => rs('tools')],
+    ['Landscape map', () => rs('tools', [['tool', { tool: 'landscape' }]])],
+    ['Compare papers', () => rs('tools', [['tool', { tool: 'compare', papers: ['p5', 'p12', 'p13'] }]])],
+    ['Claim check', () => rs('tools', [['tool', { tool: 'claim', paper: 'p5' }]])],
+    ['Roadmap', () => rs('tools', [['tool', { tool: 'roadmap', paper: 'p5' }]])],
+    ['Limit reached', () => { rs('tools'); setTimeout(() => s.setSheet({ name: 'limit', params: { tool: 'compare' } }), 60); }],
+    ['Premium plans', () => rs('tools', [['premium', { from: 'compare' }]])],
+    ['Subscription', () => s.jump('profile', [['settings'], ['subscription']])],
+  ];
+  return { app, research };
+}
+
+const slug = (l: string) => l.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+/** ?jump=paper-card&plan=premium&nav=classic&lang=bn&paused=1 opens a specific screen. */
+function useDeepLink() {
+  const s = useStore();
+  const jumps = useJumps();
+  const latest = React.useRef(jumps);
+  latest.current = jumps;
+  const done = React.useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    const q = new URLSearchParams(location.search);
+    if (q.get('plan') === 'premium') s.setPlan('premium');
+    if (q.get('nav') === 'classic') s.setNavMode('classic');
+    if (q.get('lang') === 'bn' || q.get('lang') === 'en') s.setLang(q.get('lang') as 'en' | 'bn');
+    if (q.get('paused') === '1') s.setAiPaused(true);
+    const j = q.get('jump');
+    if (j) setTimeout(() => [...latest.current.app, ...latest.current.research].find(([l]) => slug(l) === j)?.[1](), 80);
+    const sc = q.get('screen');
+    if (sc) {
+      const params: Record<string, any> = {};
+      q.forEach((v, k) => { if (!['screen', 'plan', 'nav', 'lang', 'paused', 'jump'].includes(k)) { try { params[k] = JSON.parse(v); } catch { params[k] = v; } } });
+      setTimeout(() => s.jump(q.get('nav') === 'classic' ? 'explore' : 'research', [[sc, params]]), 80);
+    }
+  }, []);
+}
+
 function DemoPanel() {
   const s = useStore();
   const d = s.demo;
   const set = (k: keyof typeof d, v: boolean) => s.setDemo({ ...d, [k]: v });
-  const jumps: [string, () => void][] = [
-    ['Home feed', () => s.jump('home')],
-    ['Reel player', () => s.jump('explore', [['reel', { id: 'r1' }]])],
-    ['Note reader', () => s.jump('home', [['note', { id: 'n2' }]])],
-    ['Activity', () => s.jump('home', [['activity']])],
-    ['Explore', () => s.jump('explore')],
-    ['Research', () => { s.setExploreSeg('research'); s.jump('explore'); }],
-    ['Paper Byte', () => s.jump('explore', [['paper', { id: 'p1' }]])],
-    ['Creators', () => { s.setExploreSeg('creators'); s.jump('explore'); }],
-    ['Create menu', () => { s.jump('home'); setTimeout(() => s.setSheet({ name: 'create' }), 50); }],
-    ['Learn', () => s.jump('learn')],
-    ['Course', () => s.jump('learn', [['course', { id: 'c1' }]])],
-    ['Practice quiz', () => s.jump('learn', [['practice'], ['quiz', { id: 'q-tf1' }]])],
-    ['Profile', () => s.jump('profile')],
-    ['Creator profile', () => s.jump('explore', [['creator', { id: 'farhana' }]])],
-    ['Settings', () => s.jump('profile', [['settings']])],
-    ['Sign in', () => { s.jump('home'); setTimeout(() => s.setAuthed(false), 30); }],
-  ];
-  const Q = ({ title, k, a, b }: { title: string; k: keyof typeof d; a: [string, boolean]; b: [string, boolean] }) => (
+  const { app, research } = useJumps();
+  const Q2 = <T extends string | boolean>({ title, value, options, onChange, tone }: { title: string; value: T; options: [string, T][]; onChange: (v: T) => void; tone?: string }) => (
+    <div className="dq">
+      <span className="dq-title">{title}</span>
+      <div className={`dq-seg ${tone || ''}`}>
+        {options.map(([l, v]) => <button key={l} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>{l}</button>)}
+      </div>
+    </div>
+  );
+  const Q =({ title, k, a, b }: { title: string; k: keyof typeof d; a: [string, boolean]; b: [string, boolean] }) => (
     <div className="dq">
       <span className="dq-title">{title}</span>
       <div className="dq-seg">
@@ -241,11 +337,22 @@ function DemoPanel() {
     <aside className="demo-panel">
       <div className="dp-head">
         <Wordmark size={34} lang="en" />
-        <span className="dp-sub">Clickable demo, Android</span>
+        <span className="dp-sub">Clickable demo, Android. All data is simulated.</span>
       </div>
+      <section className="dp-sim">
+        <h3>Simulate a user</h3>
+        <Q2 title="Plan" value={s.plan} tone="plan" options={[['Free user', 'free'], ['Premium user', 'premium']]} onChange={(v) => { s.setPlan(v); s.toast(v === 'premium' ? 'Now simulating a Premium user' : 'Now simulating a Free user'); }} />
+        <Q2 title="Platform AI budget" value={s.aiPaused} options={[['Within budget', false], ['Budget reached', true]]} onChange={s.setAiPaused} />
+        <Q2 title="Navigation" value={s.navMode} options={[['v2: Research tab', 'v2'], ['Current: Explore', 'classic']]} onChange={(v) => { s.setNavMode(v); s.jump(v === 'v2' ? 'research' : 'home'); }} />
+        <button className="dp-btn ghost sm" onClick={() => { s.resetUsage(); s.toast('Monthly allowances reset'); }}><RotateCcw size={15} /> Reset monthly allowances</button>
+      </section>
       <section>
-        <h3>Jump to</h3>
-        <div className="dp-jumps">{jumps.map(([l, f]) => <button key={l} onClick={f}>{l}</button>)}</div>
+        <h3>Research (v2)</h3>
+        <div className="dp-jumps">{research.map(([l, f]) => <button key={l} onClick={f}>{l}</button>)}</div>
+      </section>
+      <section>
+        <h3>App</h3>
+        <div className="dp-jumps">{app.map(([l, f]) => <button key={l} onClick={f}>{l}</button>)}</div>
       </section>
       <section>
         <h3>Open questions</h3>
@@ -280,6 +387,7 @@ function useFrameScale() {
 export default function App() {
   const s = useStore();
   const scale = useFrameScale();
+  useDeepLink();
   useEffect(() => { document.documentElement.lang = s.lang === 'bn' ? 'bn' : 'en'; }, [s.lang]);
   if (import.meta.env.DEV) (window as unknown as { __db: typeof s }).__db = s;
   if (s.admin) return <Admin />;

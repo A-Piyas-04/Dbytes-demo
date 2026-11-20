@@ -6,6 +6,7 @@ import '@fontsource/jetbrains-mono/600.css';
 import './styles/base.css';
 import './styles/components.css';
 import './styles/screens.css';
+import './styles/research.css';
 import App from './App';
 import { StoreProvider } from './store';
 
