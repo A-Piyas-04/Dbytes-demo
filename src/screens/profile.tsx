@@ -79,7 +79,7 @@ function ProfileView({ id }: { id: string }) {
             <div className="ph-shortcuts">
               <button className="shortcut tap" onClick={() => s.push('saved')}><Bookmark size={20} /><span>{s.t('savedItems')}</span></button>
               <button className="shortcut tap" onClick={() => s.push('progress')}><TrendingUp size={20} /><span>{s.t('progress')}</span></button>
-              <button className="shortcut tap" onClick={() => { if (s.navMode === 'v3') s.push('rLibrary'); else if (s.navMode === 'v2') s.setTab('research'); else { s.setResearchSeg('library'); s.push('researchHub'); } }}><BookOpenCheck size={20} /><span>{s.tt('Reading', 'পড়া')}</span></button>
+              <button className="shortcut tap" onClick={() => s.setTab('research')}><BookOpenCheck size={20} /><span>{s.tt('Reading', 'পড়া')}</span></button>
               <button className="shortcut tap" onClick={() => s.push('followList', { id: 'me', type: 'following' })}><Users size={20} /><span>{s.t('following')}</span></button>
             </div>
           )}

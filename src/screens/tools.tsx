@@ -11,11 +11,8 @@ import { Btn, Empty, Header, Level, Progress, Sheet } from '../ui';
 import { COLLECTION, LIMITS, PRICE, PX, RENEW_DATE, RESET_DATE, SCOPE, type Plan, type ToolId } from '../research/data';
 import { JOB_STEPS, MAPS, READ_MAPS, ROADMAPS, TOOL_META, matchMap, matchReadMap, type LandscapeMap, type ReadMap } from '../research/content';
 
-export const TOOL_ORDER: ToolId[] = ['readmap', 'landscape', 'compare', 'claim', 'roadmap'];
-/** V2 (simple) only offers these two paid tools. */
-export const V2_TOOLS: ToolId[] = ['readmap', 'roadmap'];
-/** Tools shown in each version. Classic (Explore) stays as it was, without the reading map. */
-export const toolsFor = (mode: string): ToolId[] => (mode === 'v2' ? V2_TOOLS : mode === 'classic' ? TOOL_ORDER.filter((t) => t !== 'readmap') : TOOL_ORDER);
+/** The simple version only offers these two paid AI tools. */
+export const TOOLS: ToolId[] = ['readmap', 'roadmap'];
 const TOOL_ICON: Record<ToolId, LucideIcon> = { readmap: Workflow, landscape: MapIcon, compare: Columns3, claim: ScanSearch, roadmap: ListChecks };
 
 export function ToolIcon({ tool, size = 20 }: { tool: ToolId; size?: number }) {
@@ -91,7 +88,7 @@ export function PlanCard() {
         ? s.tt(`Renews ${RENEW_DATE.en}. Allowances reset on ${RESET_DATE.en}.`, `${RENEW_DATE.bn} নবায়ন। বরাদ্দ ${RESET_DATE.bn} রিসেট।`)
         : s.tt('Reading, Paper Cards and discussions are free. Research tools include a small monthly allowance.', 'পড়া, পেপার কার্ড ও আলোচনা ফ্রি। রিসার্চ টুলসে ছোট মাসিক বরাদ্দ আছে।')}</p>
       <div className="plan-meters">
-        {toolsFor(s.navMode).map((t) => {
+        {TOOLS.map((t) => {
           const limit = LIMITS[s.plan][t];
           const used = Math.min(limit, s.usage[s.plan][t]);
           return (
@@ -903,7 +900,7 @@ export function PremiumScreen({ from }: { from?: ToolId }) {
         <table className="prem-table">
           <thead><tr><th />{(['free', 'premium'] as Plan[]).map((pl) => <th key={pl} className={pl === s.plan ? 'cur' : ''}>{pl === 'free' ? s.tt('Free', 'ফ্রি') : 'Premium'}{pl === s.plan && <small>{s.tt('Your plan', 'আপনার প্ল্যান')}</small>}</th>)}</tr></thead>
           <tbody>
-            {toolsFor(s.navMode).map((t) => (
+            {TOOLS.map((t) => (
               <tr key={t} className={from === t ? 'hl' : ''}>
                 <th scope="row"><ToolIcon tool={t} size={15} /> {s.x(TOOL_META[t].short)}</th>
                 <td>{t === 'roadmap' ? s.tt('1 trial', '১টি ট্রায়াল') : s.tt(`${LIMITS.free[t]}/mo`, `মাসে ${digits('bn', LIMITS.free[t])}`)}<small>{t === 'landscape' ? s.tt('8 papers', '৮ পেপার') : t === 'compare' ? s.tt('3 papers', '৩ পেপার') : ''}</small></td>
@@ -985,7 +982,7 @@ export function PaySuccess({ from }: { from?: ToolId }) {
         <h1>{s.tt('You’re on Premium', 'আপনি এখন প্রিমিয়ামে')}</h1>
         <p>{s.tt('Your bigger allowances are ready now.', 'বেশি বরাদ্দ এখনই প্রস্তুত।')}</p>
         <div className="plan-meters success-meters">
-          {toolsFor(s.navMode).map((t) => (
+          {TOOLS.map((t) => (
             <div key={t} className="pm-row"><span>{s.x(TOOL_META[t].short)}</span><Meter used={Math.min(LIMITS.premium[t], s.usage.premium[t])} limit={LIMITS.premium[t]} /><b>{digits(s.lang, LIMITS.premium[t] - s.usage.premium[t])} {s.tt('left', 'বাকি')}</b></div>
           ))}
         </div>

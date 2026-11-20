@@ -6,7 +6,6 @@ import {
 import { tr, tx, type Key } from './i18n';
 import { NEW_PAPERS, LIMITS, type Plan, type ToolId } from './research/data';
 
-export type NavMode = 'classic' | 'v2' | 'v3';
 export interface ReadState { step: 0 | 1 | 2 | 3; note: string; when: string }
 export interface Output { id: string; tool: ToolId; when: string; plan: Plan; params: Record<string, any>; cached?: boolean }
 const seedUsage = (): Record<Plan, Record<ToolId, number>> => ({
@@ -215,9 +214,7 @@ function useStoreValue() {
   const visible = (p: { id: string; creatorId: string; lang: ContentLang }) =>
     !hiddenPosts.has(p.id) && !blocked.includes(p.creatorId) && langOk(p.lang);
 
-  // research v2 + plans
-  const [navMode, setNavMode] = useState<NavMode>('v2');
-  const tabNav = navMode !== 'classic';
+  // research + plans
   const [howSeen, setHowSeen] = useState(false);
   const [plan, setPlanState] = useState<Plan>('free');
   const [usage, setUsage] = useState(seedUsage);
@@ -235,22 +232,20 @@ function useStoreValue() {
   const addOutput = (o: Output) => setOutputs((x) => [o, ...x]);
   const setReading = (id: string, patch: Partial<ReadState>) =>
     setReadingState((r) => ({ ...r, [id]: { ...(r[id] || { step: 0, note: '' }), ...patch, when: 'Nov 20' } }));
-  const [researchSeg, setResearchSeg] = useState<'discover' | 'tools' | 'library'>('discover');
   const markKnown = (id: string) => setKnown((k) => new Set(k).add(id));
   const toggleKnown = (id: string) => setKnown((k) => { const n = new Set(k); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleClub = (id: string) => setClubs((k) => { const n = new Set(k); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const answerFig = (k: string, v: number) => setFigAnswers((a) => ({ ...a, [k]: v }));
-  /** Open Explore (classic: switch tab; v2: push it on the current stack). */
+  /** Open Explore: pushed on top of the current tab stack. */
   const goExplore = (seg?: 'trending' | 'research' | 'creators', topic?: TopicId | null) => {
     if (seg) setExploreSeg(seg);
     if (topic !== undefined) setExploreTopic(topic);
-    if (navMode === 'classic') setTab('explore');
-    else push('explore');
+    push('explore');
   };
-  const openPractice = () => (tabNav ? setTab('practice') : push('practice'));
+  const openPractice = () => setTab('practice');
 
   const resetDemo = () => {
-    setUsage(seedUsage()); setReadingState(seedReading()); setKnown(new Set()); setOutputs(seedOutputs()); setClubs(new Set(['club2'])); setFigAnswers({}); setAiPaused(false); setResearchSeg('discover'); setHowSeen(false);
+    setUsage(seedUsage()); setReadingState(seedReading()); setKnown(new Set()); setOutputs(seedOutputs()); setClubs(new Set(['club2'])); setFigAnswers({}); setAiPaused(false); setHowSeen(false);
     setFollows([]); setLikes(new Set(['r2', 'n2'])); setSaves(new Set(['i1', 'p1', 'n1', 'c3']));
     setHiddenPosts(new Set()); setBlocked(['spam.bot']); setExtraComments({});
     setMe(ME); setMyPosts(MY_POSTS_SEED); setMyPapers(MY_PAPERS_SEED); setMyCourses([]);
@@ -261,8 +256,8 @@ function useStoreValue() {
 
   return {
     lang, setLang, t, x, tt,
-    navMode, setNavMode, tabNav, howSeen, setHowSeen, plan, setPlan, usage, left, spend, resetUsage, aiPaused, setAiPaused,
-    reading, setReading, known, toggleKnown, markKnown, researchSeg, setResearchSeg, outputs, addOutput, clubs, toggleClub, figAnswers, answerFig, payMethod, setPayMethod,
+    howSeen, setHowSeen, plan, setPlan, usage, left, spend, resetUsage, aiPaused, setAiPaused,
+    reading, setReading, known, toggleKnown, markKnown, outputs, addOutput, clubs, toggleClub, figAnswers, answerFig, payMethod, setPayMethod,
     goExplore, openPractice,
     authed, setAuthed, admin, setAdmin,
     tab, setTab, stacks, current, leaving, push, replace, back, popTo, jump,

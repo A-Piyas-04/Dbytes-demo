@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { BatteryFull, Compass, GraduationCap, House, Plus, SignalHigh, WifiHigh, RotateCcw, LayoutDashboard, CheckCircle2, Clapperboard, Target, FlaskConical } from 'lucide-react';
+import { BatteryFull, GraduationCap, SignalHigh, WifiHigh, RotateCcw, LayoutDashboard, CheckCircle2, Clapperboard, Target, FlaskConical } from 'lucide-react';
 import { useStore, isImmersive, type Screen, type Tab } from './store';
 import { ActiveCtx, Avatar, LogoMark, Wordmark } from './ui';
 import { HomeScreen, CommentsSheet, ShareSheet, MoreSheet, ReportSheet } from './screens/home';
@@ -12,33 +12,22 @@ import {
 import { CreateSheet, CreateReel, CreatePhoto, CreateNote, CreateCourse, CreateResearch, PublishedScreen } from './screens/create';
 import { ActivityScreen, NoteReader, PaperDetail, PostDetail, ReelPlayer, SignIn } from './screens/misc';
 import { Admin } from './admin';
-import { ResearchHome, PaperCardScreen, FigureReader, PrereqScreen, ReviewsScreen, PathScreen, ClubsScreen, ClubScreen, NoteSheet } from './screens/research';
+import { FigureReader, PrereqScreen, NoteSheet } from './screens/research';
 import { ToolSetup, JobScreen, OutputScreen, LimitSheet, PausedSheet, PremiumScreen, CheckoutSheet, PaySuccess, SubscriptionScreen } from './screens/tools';
 import { PX } from './research/data';
 import { SimpleResearchHome, SimplePaper } from './screens/research-v2';
-import { FullResearchHome, FullPaper, PaperPart, ResearchSection } from './screens/research-v3';
-import type { NavMode } from './store';
 
-function renderScreen(sc: Screen, mode: NavMode) {
+function renderScreen(sc: Screen) {
   const p = sc.params as any;
   switch (sc.name) {
     case 'activity': return <ActivityScreen />;
     case 'note': return <NoteReader id={p.id} />;
     case 'paper':
       if (!PX[p.id]) return <PaperDetail id={p.id} />;
-      if (mode === 'v2') return <SimplePaper id={p.id} tab={p.tab} />;
-      if (mode === 'v3') return <FullPaper id={p.id} />;
-      return <PaperCardScreen id={p.id} tab={p.tab} />;
-    case 'rPapers': case 'rPaths': case 'rTools': case 'rLibrary': case 'rResults': return <ResearchSection name={sc.name} />;
-    case 'pFigures': case 'pRelated': case 'pDiscuss': return <PaperPart name={sc.name} id={p.id} />;
+      return <SimplePaper id={p.id} tab={p.tab} />;
     case 'explore': return <ExploreScreen pushed />;
-    case 'researchHub': return <ResearchHome pushed />;
     case 'figures': return <FigureReader key={sc.key} id={p.id} i={p.i} />;
     case 'prereqs': return <PrereqScreen id={p.id} />;
-    case 'reviews': return <ReviewsScreen id={p.id} />;
-    case 'path': return <PathScreen id={p.id} />;
-    case 'clubs': return <ClubsScreen />;
-    case 'club': return <ClubScreen id={p.id} />;
     case 'tool': return <ToolSetup key={sc.key} tool={p.tool} paper={p.paper} papers={p.papers} />;
     case 'job': return <JobScreen key={sc.key} tool={p.tool} params={p.params} outId={p.outId} />;
     case 'output': return <OutputScreen id={p.id} />;
@@ -78,13 +67,13 @@ function renderScreen(sc: Screen, mode: NavMode) {
   }
 }
 
-const ROOTS: Record<Tab, (mode: NavMode) => React.ReactElement> = {
+const ROOTS: Record<Tab, () => React.ReactElement> = {
   home: () => <HomeScreen />,
   explore: () => <ExploreScreen />,
   learn: () => <LearnScreen />,
   profile: () => <ProfileScreen />,
   practice: () => <PracticeScreen root />,
-  research: (mode) => (mode === 'v2' ? <SimpleResearchHome /> : mode === 'v3' ? <FullResearchHome /> : <ResearchHome />),
+  research: () => <SimpleResearchHome />,
 };
 const ALL_TABS: Tab[] = ['home', 'explore', 'learn', 'profile', 'practice', 'research'];
 
@@ -103,14 +92,14 @@ function TabLayer({ tab }: { tab: Tab }) {
         return (
           <ActiveCtx.Provider key={l.key} value={isTab && i === topIdx && !leaving}>
             <section className={`screen ${i > 0 ? 'pushed' : ''} ${under ? 'under' : ''}`} aria-hidden={!top && !(i === topIdx)}>
-              {l.sc ? renderScreen(l.sc, s.navMode) : ROOTS[tab](s.navMode)}
+              {l.sc ? renderScreen(l.sc) : ROOTS[tab]()}
             </section>
           </ActiveCtx.Provider>
         );
       })}
       {leaving && (
         <ActiveCtx.Provider value={false}>
-          <section className="screen pushed leaving" aria-hidden="true">{renderScreen(leaving, s.navMode)}</section>
+          <section className="screen pushed leaving" aria-hidden="true">{renderScreen(leaving)}</section>
         </ActiveCtx.Provider>
       )}
     </div>
@@ -119,36 +108,22 @@ function TabLayer({ tab }: { tab: Tab }) {
 
 function BottomNav() {
   const s = useStore();
-  const v2 = s.tabNav;
-  const items: { id: Tab | 'create'; icon: React.ReactNode; label: string }[] = v2 ? [
+  const items: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: 'home', icon: <Clapperboard size={23} />, label: s.tt('Reels', 'রিল') },
     { id: 'learn', icon: <GraduationCap size={25} />, label: s.t('learn') },
     { id: 'practice', icon: <Target size={23} />, label: s.t('practice') },
     { id: 'research', icon: <FlaskConical size={23} />, label: s.t('research') },
     { id: 'profile', icon: <Avatar c={s.me} size={26} />, label: s.t('profile') },
-  ] : [
-    { id: 'home', icon: <House size={24} />, label: s.t('home') },
-    { id: 'explore', icon: <Compass size={24} />, label: s.t('explore') },
-    { id: 'create', icon: <Plus size={28} strokeWidth={2.6} />, label: s.t('create') },
-    { id: 'learn', icon: <GraduationCap size={25} />, label: s.t('learn') },
-    { id: 'profile', icon: <Avatar c={s.me} size={26} />, label: s.t('profile') },
   ];
   return (
     <nav className="bottom-nav" aria-label="Main">
-      {items.map((it) =>
-        it.id === 'create' ? (
-          <button key="create" className="nav-create" onClick={() => s.setSheet({ name: 'create' })} aria-label={it.label}>
-            <span className="nav-create-btn">{it.icon}</span>
-            <span className="nav-label">{it.label}</span>
-          </button>
-        ) : (
-          <button key={it.id} className={`nav-item ${s.tab === it.id ? 'on' : ''} ${it.id === 'profile' ? 'profile' : ''}`} onClick={() => s.setTab(it.id as Tab)} aria-current={s.tab === it.id ? 'page' : undefined}>
-            <span className="nav-icon">{it.icon}</span>
-            <span className="nav-label">{it.label}</span>
-            <span className="nav-dot" aria-hidden="true" />
-          </button>
-        ),
-      )}
+      {items.map((it) => (
+        <button key={it.id} className={`nav-item ${s.tab === it.id ? 'on' : ''} ${it.id === 'profile' ? 'profile' : ''}`} onClick={() => s.setTab(it.id)} aria-current={s.tab === it.id ? 'page' : undefined}>
+          <span className="nav-icon">{it.icon}</span>
+          <span className="nav-label">{it.label}</span>
+          <span className="nav-dot" aria-hidden="true" />
+        </button>
+      ))}
     </nav>
   );
 }
@@ -250,22 +225,16 @@ function PhoneApp() {
 
 function useJumps() {
   const s = useStore();
-  const v2 = s.tabNav;
-  const rs = (seg: 'discover' | 'tools' | 'library', screens: [string, Record<string, any>?][] = []) => {
-    s.setResearchSeg(seg);
-    if (v2) s.jump('research', screens);
-    else { s.setExploreSeg('research'); s.jump('explore', [['researchHub'], ...screens]); }
-  };
   const app: [string, () => void][] = [
     ['Home feed', () => s.jump('home')],
     ['Reel player', () => s.jump('home', [['reel', { id: 'r1' }]])],
     ['Note reader', () => s.jump('home', [['note', { id: 'n2' }]])],
     ['Activity', () => s.jump('home', [['activity']])],
-    ['Explore', () => (v2 ? s.jump('home', [['explore']]) : s.jump('explore'))],
+    ['Explore', () => s.jump('home', [['explore']])],
     ['Create menu', () => { s.jump('home'); setTimeout(() => s.setSheet({ name: 'create' }), 50); }],
     ['Learn', () => s.jump('learn')],
     ['Course', () => s.jump('learn', [['course', { id: 'c1' }]])],
-    ['Practice', () => (v2 ? s.jump('practice') : s.jump('learn', [['practice']]))],
+    ['Practice', () => s.jump('practice')],
     ['Profile', () => s.jump('profile')],
     ['Creator profile', () => s.jump('home', [['creator', { id: 'farhana' }]])],
     ['Settings', () => s.jump('profile', [['settings']])],
@@ -277,7 +246,7 @@ function useJumps() {
     if (!s.outputs.some((o) => o.id === id)) s.addOutput({ id, tool: 'readmap', when: 'Nov 20', plan: s.plan, params: { map: 'llm' } });
     s.jump('research', [['output', { id }]]);
   };
-  const v2Research: [string, () => void][] = [
+  const research: [string, () => void][] = [
     ['Research home', () => s.jump('research')],
     ['Paper', () => s.jump('research', [['paper', { id: 'p5' }]])],
     ['Figures', () => s.jump('research', [['paper', { id: 'p1', tab: 'figures' }]])],
@@ -289,58 +258,12 @@ function useJumps() {
     ['Roadmap limit', () => { s.jump('research', [['paper', { id: 'p1' }]]); setTimeout(() => s.setSheet({ name: 'limit', params: { tool: 'roadmap' } }), 60); }],
     ['Premium plans', () => s.jump('research', [['premium', { from: 'roadmap' }]])],
   ];
-  const v3Research: [string, () => void][] = [
-    ['Research home', () => s.jump('research')],
-    ['Papers', () => s.jump('research', [['rPapers']])],
-    ['Paper', () => s.jump('research', [['paper', { id: 'p5' }]])],
-    ['Figures', () => s.jump('research', [['paper', { id: 'p1' }], ['pFigures', { id: 'p1' }]])],
-    ['Figure reader', () => s.jump('research', [['paper', { id: 'p1' }], ['figures', { id: 'p1', i: 0 }]])],
-    ['Learn before reading', () => s.jump('research', [['paper', { id: 'p1' }], ['prereqs', { id: 'p1' }]])],
-    ['Related papers', () => s.jump('research', [['paper', { id: 'p1' }], ['pRelated', { id: 'p1' }]])],
-    ['Reviews', () => s.jump('research', [['paper', { id: 'p5' }], ['reviews', { id: 'p5' }]])],
-    ['Discussion', () => s.jump('research', [['paper', { id: 'p5' }], ['pDiscuss', { id: 'p5' }]])],
-    ['Reading paths', () => s.jump('research', [['rPaths']])],
-    ['Reading path', () => s.jump('research', [['rPaths'], ['path', { id: 'path2' }]])],
-    ['Paper clubs', () => s.jump('research', [['clubs']])],
-    ['Paper club', () => s.jump('research', [['clubs'], ['club', { id: 'club1' }]])],
-    ['My library', () => s.jump('research', [['rLibrary']])],
-    ['AI tools', () => s.jump('research', [['rTools']])],
-    ['Reading map', () => s.jump('research', [['rTools'], ['tool', { tool: 'readmap' }]])],
-    ['Reading map result', () => openDemoMap()],
-    ['Landscape map', () => s.jump('research', [['rTools'], ['tool', { tool: 'landscape' }]])],
-    ['Compare papers', () => s.jump('research', [['rTools'], ['tool', { tool: 'compare', papers: ['p5', 'p12', 'p13'] }]])],
-    ['Claim check', () => s.jump('research', [['rTools'], ['tool', { tool: 'claim', paper: 'p5' }]])],
-    ['Roadmap', () => s.jump('research', [['rTools'], ['tool', { tool: 'roadmap', paper: 'p5' }]])],
-    ['Saved results', () => s.jump('research', [['rResults']])],
-    ['Premium plans', () => s.jump('research', [['premium', { from: 'compare' }]])],
-    ['Subscription', () => s.jump('profile', [['settings'], ['subscription']])],
-  ];
-  const classicResearch: [string, () => void][] = [
-    ['Research home', () => rs('discover')],
-    ['Paper Card', () => rs('discover', [['paper', { id: 'p5' }]])],
-    ['Figure reader', () => rs('discover', [['paper', { id: 'p1', tab: 'figures' }], ['figures', { id: 'p1', i: 0 }]])],
-    ['Learn before reading', () => rs('discover', [['paper', { id: 'p1' }], ['prereqs', { id: 'p1' }]])],
-    ['Reading tracker', () => rs('library')],
-    ['Related papers', () => rs('discover', [['paper', { id: 'p1', tab: 'related' }]])],
-    ['Reading path', () => rs('discover', [['path', { id: 'path2' }]])],
-    ['Reviews', () => rs('discover', [['paper', { id: 'p5', tab: 'discuss' }], ['reviews', { id: 'p5' }]])],
-    ['Paper club', () => rs('discover', [['clubs'], ['club', { id: 'club1' }]])],
-    ['Research tools', () => rs('tools')],
-    ['Landscape map', () => rs('tools', [['tool', { tool: 'landscape' }]])],
-    ['Compare papers', () => rs('tools', [['tool', { tool: 'compare', papers: ['p5', 'p12', 'p13'] }]])],
-    ['Claim check', () => rs('tools', [['tool', { tool: 'claim', paper: 'p5' }]])],
-    ['Roadmap', () => rs('tools', [['tool', { tool: 'roadmap', paper: 'p5' }]])],
-    ['Limit reached', () => { rs('tools'); setTimeout(() => s.setSheet({ name: 'limit', params: { tool: 'compare' } }), 60); }],
-    ['Premium plans', () => rs('tools', [['premium', { from: 'compare' }]])],
-    ['Subscription', () => s.jump('profile', [['settings'], ['subscription']])],
-  ];
-  const research = s.navMode === 'v2' ? v2Research : s.navMode === 'v3' ? v3Research : classicResearch;
   return { app, research };
 }
 
 const slug = (l: string) => l.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-/** ?jump=paper-card&plan=premium&nav=classic&lang=bn&paused=1 opens a specific screen. */
+/** ?jump=paper&plan=premium&lang=bn&paused=1 opens a specific screen. */
 function useDeepLink() {
   const s = useStore();
   const jumps = useJumps();
@@ -352,8 +275,6 @@ function useDeepLink() {
     done.current = true;
     const q = new URLSearchParams(location.search);
     if (q.get('plan') === 'premium') s.setPlan('premium');
-    const nav = q.get('nav');
-    if (nav === 'classic' || nav === 'v2' || nav === 'v3') s.setNavMode(nav);
     if (q.get('lang') === 'bn' || q.get('lang') === 'en') s.setLang(q.get('lang') as 'en' | 'bn');
     if (q.get('paused') === '1') s.setAiPaused(true);
     const j = q.get('jump');
@@ -361,8 +282,8 @@ function useDeepLink() {
     const sc = q.get('screen');
     if (sc) {
       const params: Record<string, any> = {};
-      q.forEach((v, k) => { if (!['screen', 'plan', 'nav', 'lang', 'paused', 'jump'].includes(k)) { try { params[k] = JSON.parse(v); } catch { params[k] = v; } } });
-      setTimeout(() => s.jump(nav === 'classic' ? 'explore' : 'research', [[sc, params]]), 80);
+      q.forEach((v, k) => { if (!['screen', 'plan', 'lang', 'paused', 'jump'].includes(k)) { try { params[k] = JSON.parse(v); } catch { params[k] = v; } } });
+      setTimeout(() => s.jump('research', [[sc, params]]), 80);
     }
   }, []);
 }
@@ -398,11 +319,10 @@ function DemoPanel() {
         <h3>Simulate a user</h3>
         <Q2 title="Plan" value={s.plan} tone="plan" options={[['Free user', 'free'], ['Premium user', 'premium']]} onChange={(v) => { s.setPlan(v); s.toast(v === 'premium' ? 'Now simulating a Premium user' : 'Now simulating a Free user'); }} />
         <Q2 title="Platform AI budget" value={s.aiPaused} options={[['Within budget', false], ['Budget reached', true]]} onChange={s.setAiPaused} />
-        <Q2 title="Version" value={s.navMode} options={[['Explore', 'classic'], ['V2 Simple', 'v2'], ['V3 Full', 'v3']]} onChange={(v) => { s.setNavMode(v); s.jump(v === 'classic' ? 'home' : 'research'); }} />
         <button className="dp-btn ghost sm" onClick={() => { s.resetUsage(); s.toast('Monthly allowances reset'); }}><RotateCcw size={15} /> Reset monthly allowances</button>
       </section>
       <section>
-        <h3>Research ({s.navMode === 'classic' ? 'current' : s.navMode.toUpperCase()})</h3>
+        <h3>Research</h3>
         <div className="dp-jumps">{research.map(([l, f]) => <button key={l} onClick={f}>{l}</button>)}</div>
       </section>
       <section>

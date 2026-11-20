@@ -79,22 +79,19 @@ export function LangToggle() {
 export function TopBar({ children, noSearch }: { children?: React.ReactNode; noSearch?: boolean }) {
   const s = useStore();
   const unread = !s.activityRead && s.activity.some((a) => a.unread);
-  const v2 = s.tabNav;
   return (
     <header className="topbar">
-      <Wordmark size={v2 ? 27 : 30} />
+      <Wordmark size={27} />
       <div className="topbar-right">
         <LangToggle />
-        {v2 && !noSearch && (
+        {!noSearch && (
           <button className="icon-btn tap" onClick={() => s.push('explore')} aria-label={s.tt('Search', 'খুঁজুন')}>
             <Search size={21} />
           </button>
         )}
-        {v2 && (
-          <button className="icon-btn tap" onClick={() => s.setSheet({ name: 'create' })} aria-label={s.t('create')}>
-            <SquarePlus size={22} />
-          </button>
-        )}
+        <button className="icon-btn tap" onClick={() => s.setSheet({ name: 'create' })} aria-label={s.t('create')}>
+          <SquarePlus size={22} />
+        </button>
         <button className="icon-btn tap" onClick={() => s.push('activity')} aria-label={s.t('activity')}>
           <Bell size={22} />
           {unread && <span className="badge-dot" />}
