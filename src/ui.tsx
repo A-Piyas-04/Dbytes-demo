@@ -4,20 +4,23 @@ export const ActiveCtx = createContext(true);
 export const useActive = () => useContext(ActiveCtx);
 import { ArrowLeft, BadgeCheck, Bell, Check, FileText, Image as ImageIcon, Images, Play, Plus, Video, Layers } from 'lucide-react';
 import { useStore, creatorOf } from './store';
-import { TOPICS, type Creator, type TopicId, type LessonType } from './data';
+import { TOPICS, type Creator, type Lang, type TopicId, type LessonType } from './data';
 import { digits } from './i18n';
+
+/** Resolve a /public path against the Vite base so the demo works from a subfolder. */
+export const asset = (p: string) => `${import.meta.env.BASE_URL}${p}`;
 
 export function Avatar({ c, size = 40, ring = false }: { c: Creator; size?: number; ring?: boolean }) {
   return (
     <span
-      className={`avatar ${ring ? 'ring' : ''}`}
+      className={`avatar ${ring ? 'ring' : ''} ${c.img ? 'img' : ''}`}
       style={{
         width: size, height: size, fontSize: size * 0.36,
-        background: `linear-gradient(140deg, hsl(${c.hue} 62% 58%), hsl(${(c.hue + 40) % 360} 58% 38%))`,
+        background: c.img ? 'var(--ink)' : `linear-gradient(140deg, hsl(${c.hue} 62% 58%), hsl(${(c.hue + 40) % 360} 58% 38%))`,
       }}
       aria-hidden="true"
     >
-      {c.initials}
+      {c.img ? <img src={asset(c.img)} alt="" draggable={false} /> : c.initials}
     </span>
   );
 }
@@ -32,14 +35,34 @@ export function Name({ c, className = '' }: { c: Creator; className?: string }) 
   );
 }
 
-export function Wordmark({ size = 20 }: { size?: number }) {
-  const { lang } = useStore();
+/* The two lockups differ in proportion; this keeps the main word the same
+   optical size when the language flips. */
+const LOCKUP_SCALE = { en: 1, bn: 0.92 } as const;
+
+export function Wordmark({ size = 30, tone = 'dark', lang: force }: { size?: number; tone?: 'dark' | 'light'; lang?: Lang }) {
+  const { lang: appLang } = useStore();
+  const lang = force ?? appLang;
   return (
-    <span className="wordmark" style={{ fontSize: size }}>
-      {lang === 'bn' ? 'দশমিক' : 'doshomik'}
-      <span className="wm-dot" />
-      <span className="wm-bytes">{lang === 'bn' ? 'বাইটস' : 'bytes'}</span>
-    </span>
+    <img
+      className="wordmark-img"
+      src={asset(`logo/lockup-${lang}${tone === 'light' ? '-light' : ''}.png`)}
+      style={{ height: Math.round(size * LOCKUP_SCALE[lang]) }}
+      alt="Doshomik Bytes"
+      draggable={false}
+    />
+  );
+}
+
+export function LogoMark({ size = 36, className = '' }: { size?: number; className?: string }) {
+  return (
+    <img
+      className={`logo-mark ${className}`}
+      src={asset('logo/mark-512.png')}
+      style={{ width: size, height: size }}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+    />
   );
 }
 
@@ -58,7 +81,7 @@ export function TopBar({ children }: { children?: React.ReactNode }) {
   const unread = !s.activityRead && s.activity.some((a) => a.unread);
   return (
     <header className="topbar">
-      <Wordmark />
+      <Wordmark size={30} />
       <div className="topbar-right">
         <LangToggle />
         <button className="icon-btn tap" onClick={() => s.push('activity')} aria-label={s.t('activity')}>

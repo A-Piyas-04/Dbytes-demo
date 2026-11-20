@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { BatteryFull, Compass, GraduationCap, House, Plus, SignalHigh, WifiHigh, RotateCcw, LayoutDashboard, CheckCircle2 } from 'lucide-react';
 import { useStore, isImmersive, type Screen, type Tab } from './store';
-import { ActiveCtx, Avatar, Wordmark } from './ui';
+import { ActiveCtx, Avatar, LogoMark, Wordmark } from './ui';
 import { HomeScreen, CommentsSheet, ShareSheet, MoreSheet, ReportSheet } from './screens/home';
 import { ExploreScreen, SearchAllScreen } from './screens/explore';
 import { LearnScreen, CourseDetail, LessonViewer, PracticeScreen, PracticeTopic, QuizScreen, QuizResult } from './screens/learn';
@@ -172,7 +172,10 @@ function Splash({ onDone }: { onDone: () => void }) {
   useEffect(() => { const id = setTimeout(onDone, 1300); return () => clearTimeout(id); }, [onDone]);
   return (
     <div className="splash">
-      <Wordmark size={34} />
+      <div className="splash-logo">
+        <LogoMark size={88} className="splash-mark" />
+        <Wordmark size={48} />
+      </div>
     </div>
   );
 }
@@ -237,7 +240,7 @@ function DemoPanel() {
   return (
     <aside className="demo-panel">
       <div className="dp-head">
-        <span className="wordmark" style={{ fontSize: 22 }}>doshomik<span className="wm-dot" /><span className="wm-bytes">bytes</span></span>
+        <Wordmark size={34} lang="en" />
         <span className="dp-sub">Clickable demo, Android</span>
       </div>
       <section>

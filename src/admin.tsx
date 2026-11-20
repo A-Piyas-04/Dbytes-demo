@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BarChart3, ClipboardList, Flag, LayoutDashboard, Search, Smartphone, Users, Ban, PauseCircle, Check, Trash2, TriangleAlert, X, FileText, Clapperboard, MessageCircle, Images } from 'lucide-react';
 import { CREATORS } from './data';
 import { useStore } from './store';
-import { Avatar } from './ui';
+import { Avatar, Wordmark } from './ui';
 
 type Section = 'overview' | 'users' | 'reports' | 'log';
 type Status = 'active' | 'suspended' | 'banned';
@@ -62,7 +62,7 @@ export function Admin() {
   return (
     <div className="admin">
       <aside className="adm-side">
-        <div className="adm-brand"><span className="wordmark" style={{ fontSize: 19 }}>doshomik<span className="wm-dot" /><span className="wm-bytes">bytes</span></span><span className="adm-pill">Admin</span></div>
+        <div className="adm-brand"><Wordmark size={30} tone="light" lang="en" /><span className="adm-pill">Admin</span></div>
         <nav>
           {nav.map(([id, icon, label, n]) => (
             <button key={id} className={`adm-nav ${sec === id ? 'on' : ''}`} onClick={() => setSec(id)}>

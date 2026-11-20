@@ -26,6 +26,8 @@ export interface Creator {
   hue: number;
   initials: string;
   verified?: boolean;
+  /** Path under /public, e.g. the brand mark for the official account. */
+  img?: string;
 }
 
 export const ME_ID = 'me';
@@ -38,7 +40,7 @@ export const CREATORS: Creator[] = [
   { id: 'rafi', name: { en: 'Rafiul Islam', bn: 'রাফিউল ইসলাম' }, handle: 'rafi.builds', bio: { en: 'Building AI agents', bn: 'এআই এজেন্ট বিল্ডার' }, followers: 15200, following: 97, hue: 24, initials: 'RI' },
   { id: 'arif', name: { en: 'Dr. Arif Mahmud', bn: 'ড. আরিফ মাহমুদ' }, handle: 'arif.research', bio: { en: 'Weekly paper bytes', bn: 'সাপ্তাহিক পেপার বাইটস' }, followers: 22700, following: 64, hue: 140, initials: 'AM', verified: true },
   { id: 'mehedi', name: { en: 'Mehedi Karim', bn: 'মেহেদী করিম' }, handle: 'mehedi.genai', bio: { en: 'GenAI, art + code', bn: 'জেনএআই, আর্ট + কোড' }, followers: 12100, following: 233, hue: 290, initials: 'MK' },
-  { id: 'doshomik', name: { en: 'Doshomik Bytes', bn: 'দশমিক বাইটস' }, handle: 'doshomik', bio: { en: 'Official account', bn: 'অফিশিয়াল অ্যাকাউন্ট' }, followers: 86500, following: 12, hue: 172, initials: 'DB', verified: true },
+  { id: 'doshomik', name: { en: 'Doshomik Bytes', bn: 'দশমিক বাইটস' }, handle: 'doshomik', bio: { en: 'Official account', bn: 'অফিশিয়াল অ্যাকাউন্ট' }, followers: 86500, following: 12, hue: 172, initials: 'DB', verified: true, img: 'logo/mark-512.png' },
 ];
 
 export const ME: Creator = {

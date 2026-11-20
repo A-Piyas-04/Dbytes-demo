@@ -463,8 +463,6 @@
 /* ================= ADMIN ================= */
 .admin { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; background: var(--paper); }
 .adm-side { background: var(--ink); color: #fff; padding: 22px 14px; display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0; height: 100vh; }
-.adm-side .wordmark { color: #fff; }
-.adm-side .wm-bytes { color: var(--mint); }
 .adm-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; }
 .adm-pill { font-size: 11px; font-weight: 750; padding: 2px 8px; border-radius: 6px; background: var(--accent); color: var(--ink); }
 .adm-side nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }

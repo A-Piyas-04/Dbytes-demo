@@ -187,7 +187,7 @@ export function SignIn() {
       <div className="si-top"><LangToggle /></div>
       <div className="si-hero">
         <div className="si-scene"><Scene kind="neural" dark /></div>
-        <Wordmark size={34} />
+        <Wordmark size={52} />
         <p className="si-tag">{s.t('tagline')}</p>
       </div>
       <div className="si-actions">
