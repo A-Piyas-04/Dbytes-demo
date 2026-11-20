@@ -13,6 +13,7 @@ import {
   CardTab, ContinueCard, Discover, DiscussTab, FiguresTab, GoDeeper, Library, PaperItem, PathCard, ReadSteps, RelatedTab, ToolsHub, prereqDone,
 } from './research';
 import { OutputRow } from './tools';
+import { ReadMapCard } from './research-v2';
 
 const dayNum = (w: string) => parseInt(w.replace(/\D/g, ''), 10) || 0;
 
@@ -80,7 +81,7 @@ export function FullResearchHome() {
             <FeatureTile hue={172} icon={<FileText size={22} />} label={s.tt('Papers', 'পেপার')} hint={s.tt('Browse and sort', 'দেখুন ও সাজান')} badge={digits(s.lang, COLLECTION.length)} onClick={() => s.push('rPapers')} />
             <FeatureTile hue={330} icon={<Route size={22} />} label={s.tt('Reading paths', 'রিডিং পাথ')} hint={s.tt('Papers in order', 'ক্রমানুসারে পেপার')} badge={digits(s.lang, PATHS.length)} onClick={() => s.push('rPaths')} />
             <FeatureTile hue={24} icon={<Users size={22} />} label={s.tt('Paper clubs', 'পেপার ক্লাব')} hint={s.tt('Read together', 'একসাথে পড়ুন')} badge={digits(s.lang, CLUBS.length)} onClick={() => s.push('clubs')} />
-            <FeatureTile hue={42} icon={<Sparkles size={22} />} label={s.tt('AI tools', 'এআই টুলস')} hint={s.tt('Map, compare, check', 'ম্যাপ, তুলনা, যাচাই')} badge={s.tt(`${toolsLeft} left`, `${digits('bn', toolsLeft)} বাকি`)} onClick={() => s.push('rTools')} />
+            <FeatureTile hue={42} icon={<Sparkles size={22} />} label={s.tt('AI tools', 'এআই টুলস')} hint={s.tt('Reading map and more', 'রিডিং ম্যাপ ও আরও')} badge={s.tt(`${toolsLeft} left`, `${digits('bn', toolsLeft)} বাকি`)} onClick={() => s.push('rTools')} />
             <FeatureTile hue={210} icon={<BookOpenCheck size={22} />} label={s.tt('My library', 'আমার লাইব্রেরি')} hint={s.tt('Progress and notes', 'অগ্রগতি ও নোট')} badge={digits(s.lang, tracked)} onClick={() => s.push('rLibrary')} />
             <FeatureTile hue={140} icon={<FolderOpen size={22} />} label={s.tt('Saved results', 'সেভ করা ফল')} hint={s.tt('Your AI outputs', 'আপনার এআই আউটপুট')} badge={digits(s.lang, s.outputs.length)} onClick={() => s.push('rResults')} />
           </div>
@@ -115,6 +116,7 @@ export function ResearchSection({ name }: { name: string }) {
         {name === 'rPaths' && (
           <div className="pad v3-paths">
             <p className="v3-lede">{s.tt('Short lists of papers, in the right order.', 'সঠিক ক্রমে সাজানো পেপারের ছোট তালিকা।')}</p>
+            <div className="v3-mapcard"><ReadMapCard /></div>
             <div className="list">{PATHS.map((p) => <PathCard key={p.id} id={p.id} />)}</div>
           </div>
         )}

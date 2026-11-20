@@ -2,17 +2,21 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, Check, CheckCircle2, ChevronRight, CircleDashed, Columns3, CreditCard, FileText, Info, ListChecks, LoaderCircle,
   Lock, Map as MapIcon, PauseCircle, Receipt, ScanSearch, Search, Share2, ShieldCheck, Sparkles, Telescope, TriangleAlert, X,
-  Smartphone, Wallet, CircleCheck, CircleX, CircleHelp,
+  Smartphone, Wallet, CircleCheck, CircleX, CircleHelp, Workflow,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { findPaper, useStore, type Output, type Store } from '../store';
 import { digits } from '../i18n';
 import { Btn, Empty, Header, Level, Progress, Sheet } from '../ui';
 import { COLLECTION, LIMITS, PRICE, PX, RENEW_DATE, RESET_DATE, SCOPE, type Plan, type ToolId } from '../research/data';
-import { JOB_STEPS, MAPS, ROADMAPS, TOOL_META, matchMap, type LandscapeMap } from '../research/content';
+import { JOB_STEPS, MAPS, READ_MAPS, ROADMAPS, TOOL_META, matchMap, matchReadMap, type LandscapeMap, type ReadMap } from '../research/content';
 
-export const TOOL_ORDER: ToolId[] = ['landscape', 'compare', 'claim', 'roadmap'];
-const TOOL_ICON: Record<ToolId, LucideIcon> = { landscape: MapIcon, compare: Columns3, claim: ScanSearch, roadmap: ListChecks };
+export const TOOL_ORDER: ToolId[] = ['readmap', 'landscape', 'compare', 'claim', 'roadmap'];
+/** V2 (simple) only offers these two paid tools. */
+export const V2_TOOLS: ToolId[] = ['readmap', 'roadmap'];
+/** Tools shown in each version. Classic (Explore) stays as it was, without the reading map. */
+export const toolsFor = (mode: string): ToolId[] => (mode === 'v2' ? V2_TOOLS : mode === 'classic' ? TOOL_ORDER.filter((t) => t !== 'readmap') : TOOL_ORDER);
+const TOOL_ICON: Record<ToolId, LucideIcon> = { readmap: Workflow, landscape: MapIcon, compare: Columns3, claim: ScanSearch, roadmap: ListChecks };
 
 export function ToolIcon({ tool, size = 20 }: { tool: ToolId; size?: number }) {
   const I = TOOL_ICON[tool];
@@ -47,6 +51,7 @@ export function quotaText(s: Store, tool: ToolId, plan: Plan = s.plan) {
 
 function scopeText(s: Store, tool: ToolId, plan: Plan = s.plan) {
   const sc = SCOPE[plan];
+  if (tool === 'readmap') return s.tt('Up to 12 papers, in order', 'সর্বোচ্চ ১২টি পেপার, ক্রমানুসারে');
   if (tool === 'landscape') return s.tt(`Up to ${sc.mapPapers} papers per map`, `প্রতি ম্যাপে সর্বোচ্চ ${digits('bn', sc.mapPapers)}টি পেপার`);
   if (tool === 'compare') return s.tt(`Up to ${sc.comparePapers} papers, ${sc.pagesPerPaper} pages each`, `সর্বোচ্চ ${digits('bn', sc.comparePapers)}টি পেপার, প্রতিটি ${digits('bn', sc.pagesPerPaper)} পৃষ্ঠা`);
   if (tool === 'claim') return s.tt('One claim per check, supported papers', 'প্রতি যাচাইয়ে একটি দাবি, সমর্থিত পেপার');
@@ -86,7 +91,7 @@ export function PlanCard() {
         ? s.tt(`Renews ${RENEW_DATE.en}. Allowances reset on ${RESET_DATE.en}.`, `${RENEW_DATE.bn} নবায়ন। বরাদ্দ ${RESET_DATE.bn} রিসেট।`)
         : s.tt('Reading, Paper Cards and discussions are free. Research tools include a small monthly allowance.', 'পড়া, পেপার কার্ড ও আলোচনা ফ্রি। রিসার্চ টুলসে ছোট মাসিক বরাদ্দ আছে।')}</p>
       <div className="plan-meters">
-        {TOOL_ORDER.map((t) => {
+        {toolsFor(s.navMode).map((t) => {
           const limit = LIMITS[s.plan][t];
           const used = Math.min(limit, s.usage[s.plan][t]);
           return (
@@ -113,6 +118,7 @@ export function PausedBanner() {
 }
 
 export function outputTitle(s: Store, o: Output) {
+  if (o.tool === 'readmap') return s.x(READ_MAPS.find((m) => m.id === o.params.map)!.topic);
   if (o.tool === 'landscape') return s.x(MAPS.find((m) => m.id === o.params.map)!.topic);
   if (o.tool === 'compare') return (o.params.papers as string[]).map((id) => shortTitle(findPaper(s, id)!.title)).join(s.tt(' vs ', ' বনাম '));
   return findPaper(s, o.params.paper)!.title;
@@ -165,7 +171,7 @@ export function LimitSheet({ tool }: { tool: ToolId }) {
         <div className="ls-actions">
           {!premium && <Btn block size="lg" onClick={() => { close(); setTimeout(() => s.push('premium', { from: tool }), 10); }}>{s.tt(`See Premium, ৳${PRICE.bdt}/month`, `প্রিমিয়াম দেখুন, মাসে ৳${digits('bn', PRICE.bdt)}`)}</Btn>}
           {saved.length > 0 && <Btn block variant="secondary" onClick={() => { close(); setTimeout(() => s.push('output', { id: saved[0].id }), 10); }}>{s.tt(`Open your saved ${m.unit.en}`, `সেভ করা ${m.unit.bn} খুলুন`)}</Btn>}
-          <button className="link-btn tap center" onClick={close}>{premium ? s.t('done') : s.tt(`Not now, wait until ${RESET_DATE.en}`, `এখন না, ${RESET_DATE.bn} পর্যন্ত অপেক্ষা`)}</button>
+          <button className="link-btn tap center" onClick={close}>{premium ? s.t('done') : lifetime ? s.tt('Not now', 'এখন না') : s.tt(`Not now, wait until ${RESET_DATE.en}`, `এখন না, ${RESET_DATE.bn} পর্যন্ত অপেক্ষা`)}</button>
         </div>
       </div>
     </Sheet>
@@ -215,9 +221,11 @@ export function ToolSetup({ tool, paper, papers }: { tool: ToolId; paper?: strin
 
   const usesLine = s.plan === 'free' && tool === 'roadmap'
     ? s.tt('Uses your one free roadmap trial', 'আপনার একমাত্র ফ্রি রোডম্যাপ ট্রায়াল খরচ হবে')
+    : s.plan === 'free' && tool === 'readmap'
+    ? s.tt('Uses your free map for this month', 'এ মাসের ফ্রি ম্যাপ খরচ হবে')
     : s.tt(`Uses 1 of your ${LIMITS[s.plan][tool]} ${m.units.en} this month`, `এ মাসের ${digits('bn', LIMITS[s.plan][tool])}টি ${m.units.bn}-এর ১টি খরচ হবে`);
 
-  const cta = { landscape: s.tt('Build map', 'ম্যাপ তৈরি'), compare: s.tt('Compare papers', 'পেপার তুলনা'), claim: s.tt('Check this claim', 'দাবি যাচাই'), roadmap: s.tt('Build roadmap', 'রোডম্যাপ তৈরি') }[tool];
+  const cta = { readmap: s.tt('Build my map', 'ম্যাপ তৈরি করুন'), landscape: s.tt('Build map', 'ম্যাপ তৈরি'), compare: s.tt('Compare papers', 'পেপার তুলনা'), claim: s.tt('Check this claim', 'দাবি যাচাই'), roadmap: s.tt('Build roadmap', 'রোডম্যাপ তৈরি') }[tool];
 
   return (
     <div className="screen-col tool-screen">
@@ -228,6 +236,7 @@ export function ToolSetup({ tool, paper, papers }: { tool: ToolId; paper?: strin
           <ToolIcon tool={tool} size={22} />
           <p>{s.x(m.desc)}</p>
         </div>
+        {tool === 'readmap' && <ReadmapSetup onReady={setReady} />}
         {tool === 'landscape' && <LandscapeSetup onReady={setReady} onCached={setCachedMap} />}
         {tool === 'compare' && <CompareSetup initial={papers} onReady={setReady} />}
         {tool === 'claim' && <ClaimSetup initial={paper} onReady={setReady} />}
@@ -444,6 +453,7 @@ function RoadmapSetup({ initial, onReady }: { initial?: string; onReady: ReadyFn
 
 type Tag = 'source' | 'small' | 'strong' | 'save';
 const JOB_TAGS: Record<ToolId, Tag[]> = {
+  readmap: ['source', 'source', 'strong', 'small', 'save'],
   landscape: ['source', 'source', 'source', 'strong', 'strong', 'save'],
   compare: ['source', 'small', 'small', 'strong', 'save'],
   claim: ['small', 'small', 'source', 'strong', 'save'],
@@ -452,6 +462,7 @@ const JOB_TAGS: Record<ToolId, Tag[]> = {
 
 function jobCaps(s: Store, tool: ToolId, params: Record<string, any>) {
   const sc = SCOPE[s.plan];
+  if (tool === 'readmap') { const m = READ_MAPS.find((x) => x.id === params.map)!; return { papers: m.layers.flat().length, papersCap: 12, pages: 0, pagesCap: 0, tokensCap: 40 }; }
   if (tool === 'landscape') return { papers: Math.min(params.n, landscapeCount(s.plan, params.map)), papersCap: sc.mapPapers, pages: 0, pagesCap: 0, tokensCap: s.plan === 'premium' ? 120 : 60 };
   if (tool === 'compare') return { papers: params.papers.length, papersCap: sc.comparePapers, pages: params.papers.length * 18, pagesCap: params.papers.length * sc.pagesPerPaper, tokensCap: params.papers.length * 30 };
   return { papers: 1, papersCap: 1, pages: tool === 'claim' ? 9 : 22, pagesCap: tool === 'claim' ? 12 : sc.pagesPerPaper, tokensCap: tool === 'claim' ? 40 : 50 };
@@ -497,6 +508,10 @@ export function JobScreen({ tool, params, outId }: { tool: ToolId; params: Recor
     s.toast(s.tt('Still working. It will appear in your saved outputs.', 'কাজ চলছে। সেভ করা আউটপুটে দেখাবে।'));
   };
   const detail = (k: number) => {
+    if (tool === 'readmap') {
+      const m = READ_MAPS.find((x) => x.id === params.map)!;
+      return [s.tt(`${m.layers.flat().length} papers`, `${digits('bn', m.layers.flat().length)}টি পেপার`), s.tt(`${m.edges.length} links`, `${digits('bn', m.edges.length)}টি সংযোগ`), s.tt(`${m.layers.length} steps`, `${digits('bn', m.layers.length)}টি ধাপ`), '', ''][k];
+    }
     if (tool === 'landscape') {
       const m = MAPS.find((x) => x.id === params.map)!;
       return [s.tt(`${m.candidates} candidate papers`, `${digits('bn', m.candidates)}টি সম্ভাব্য পেপার`), s.tt(`Kept the ${caps.papers} most relevant`, `সবচেয়ে প্রাসঙ্গিক ${digits('bn', caps.papers)}টি রাখা হয়েছে`), s.tt(`${m.links.length * 6 + 3} citation links`, `${digits('bn', m.links.length * 6 + 3)}টি সাইটেশন সংযোগ`), s.tt(`${m.themes.length} themes`, `${digits('bn', m.themes.length)}টি থিম`), s.tt(`${m.links.length} links, ${m.questions.length + (s.plan === 'premium' ? m.extraQuestions.length : 0)} questions`, `${digits('bn', m.links.length)}টি সংযোগ, ${digits('bn', m.questions.length)}টি প্রশ্ন`), ''][k];
@@ -517,7 +532,7 @@ export function JobScreen({ tool, params, outId }: { tool: ToolId; params: Recor
       <div className="scroll pad">
         <div className="job-head">
           <span className="job-kicker">{i >= steps.length ? s.tt('Done', 'সম্পন্ন') : s.tt('Working on it', 'কাজ চলছে')}</span>
-          <h1>{tool === 'landscape' ? s.x(MAPS.find((m) => m.id === params.map)!.topic) : tool === 'compare' ? (params.papers as string[]).map((id) => shortTitle(findPaper(s, id)!.title)).join(' · ') : findPaper(s, params.paper)!.title}</h1>
+          <h1>{tool === 'readmap' ? s.x(READ_MAPS.find((m) => m.id === params.map)!.topic) : tool === 'landscape' ? s.x(MAPS.find((m) => m.id === params.map)!.topic) : tool === 'compare' ? (params.papers as string[]).map((id) => shortTitle(findPaper(s, id)!.title)).join(' · ') : findPaper(s, params.paper)!.title}</h1>
           <div className="job-bar"><span style={{ width: `${prog * 100}%` }} /></div>
         </div>
         <ol className="job-steps">
@@ -561,6 +576,7 @@ export function OutputScreen({ id }: { id: string }) {
     <div className="screen-col">
       <Header title={s.x(TOOL_META[o.tool].short)} right={<button className="icon-btn tap" onClick={() => s.setSheet({ name: 'share', params: { id } })} aria-label={s.t('share')}><Share2 size={21} /></button>} />
       <div className="scroll">
+        {o.tool === 'readmap' && <ReadmapOut o={o} />}
         {o.tool === 'landscape' && <LandscapeOut o={o} />}
         {o.tool === 'compare' && <MatrixOut o={o} />}
         {o.tool === 'claim' && <ClaimOut o={o} />}
@@ -882,12 +898,12 @@ export function PremiumScreen({ from }: { from?: ToolId }) {
         <div className="prem-hero">
           <ProBadge />
           <h1>{s.tt('More research help, when you need it', 'যখন দরকার, আরও রিসার্চ সহায়তা')}</h1>
-          <p>{s.tt('Learning on Doshomik Bytes stays free. Premium gives you bigger monthly allowances for the four research tools.', 'দশমিক বাইটসে শেখা ফ্রি থাকবে। প্রিমিয়ামে চারটি রিসার্চ টুলে বেশি মাসিক বরাদ্দ।')}</p>
+          <p>{s.tt('Learning on Doshomik Bytes stays free. Premium gives you bigger monthly allowances for the AI research tools.', 'দশমিক বাইটসে শেখা ফ্রি থাকবে। প্রিমিয়ামে এআই রিসার্চ টুলে বেশি মাসিক বরাদ্দ।')}</p>
         </div>
         <table className="prem-table">
           <thead><tr><th />{(['free', 'premium'] as Plan[]).map((pl) => <th key={pl} className={pl === s.plan ? 'cur' : ''}>{pl === 'free' ? s.tt('Free', 'ফ্রি') : 'Premium'}{pl === s.plan && <small>{s.tt('Your plan', 'আপনার প্ল্যান')}</small>}</th>)}</tr></thead>
           <tbody>
-            {TOOL_ORDER.map((t) => (
+            {toolsFor(s.navMode).map((t) => (
               <tr key={t} className={from === t ? 'hl' : ''}>
                 <th scope="row"><ToolIcon tool={t} size={15} /> {s.x(TOOL_META[t].short)}</th>
                 <td>{t === 'roadmap' ? s.tt('1 trial', '১টি ট্রায়াল') : s.tt(`${LIMITS.free[t]}/mo`, `মাসে ${digits('bn', LIMITS.free[t])}`)}<small>{t === 'landscape' ? s.tt('8 papers', '৮ পেপার') : t === 'compare' ? s.tt('3 papers', '৩ পেপার') : ''}</small></td>
@@ -969,7 +985,7 @@ export function PaySuccess({ from }: { from?: ToolId }) {
         <h1>{s.tt('You’re on Premium', 'আপনি এখন প্রিমিয়ামে')}</h1>
         <p>{s.tt('Your bigger allowances are ready now.', 'বেশি বরাদ্দ এখনই প্রস্তুত।')}</p>
         <div className="plan-meters success-meters">
-          {TOOL_ORDER.map((t) => (
+          {toolsFor(s.navMode).map((t) => (
             <div key={t} className="pm-row"><span>{s.x(TOOL_META[t].short)}</span><Meter used={Math.min(LIMITS.premium[t], s.usage.premium[t])} limit={LIMITS.premium[t]} /><b>{digits(s.lang, LIMITS.premium[t] - s.usage.premium[t])} {s.tt('left', 'বাকি')}</b></div>
           ))}
         </div>
@@ -1016,5 +1032,114 @@ export function SubscriptionScreen() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ---------------- reading map ---------------- */
+
+function ReadmapSetup({ onReady }: { onReady: ReadyFn }) {
+  const s = useStore();
+  const [topic, setTopic] = useState('');
+  const map = matchReadMap(topic);
+  useEffect(() => { onReady(map ? { map: map.id } : null); }, [map?.id]);
+  return (
+    <>
+      <label className="field">
+        <span className="field-label">{s.tt('What do you want to learn?', 'কী শিখতে চান?')}</span>
+        <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={s.tt('e.g. large language models', 'যেমন: বড় ভাষা মডেল')} />
+      </label>
+      <div className="chip-row wrap" style={{ marginTop: -8, marginBottom: 14 }}>
+        {READ_MAPS.map((m) => <button key={m.id} className={`chip sm tap ${map?.id === m.id ? 'on' : ''}`} onClick={() => setTopic(s.x(m.topic))}>{s.x(m.topic)}</button>)}
+      </div>
+      {topic.trim() && !map && <div className="note-box"><Info size={16} /> <span>{s.tt('Not ready for this topic yet. Pick one above.', 'এই টপিক এখনো প্রস্তুত নয়। উপরের একটি বাছুন।')}</span></div>}
+      {map && (
+        <div className="rm-preview">
+          <MiniMap map={map} />
+          <span><b>{s.tt(`${map.layers.flat().length} papers, ${map.layers.length} steps`, `${digits('bn', map.layers.flat().length)}টি পেপার, ${digits('bn', map.layers.length)}টি ধাপ`)}</b>{s.tt('Tap any box in the map to open the paper.', 'ম্যাপের যেকোনো বক্সে চাপলে পেপার খুলবে।')}</span>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Tiny dot preview of the layer shape, used on the setup screen. */
+function MiniMap({ map }: { map: ReadMap }) {
+  return (
+    <span className="rm-mini" aria-hidden="true">
+      {map.layers.map((l, i) => <span key={i}>{l.map((id) => <i key={id} />)}</span>)}
+    </span>
+  );
+}
+
+const RM_ROW = 104;
+const RM_BOX = 70;
+
+/** Layered map: one row per step, boxes are papers, lines mean "read this first". */
+export function ReadMapGraph({ map }: { map: ReadMap }) {
+  const s = useStore();
+  const pos: Record<string, { x: number; y: number }> = {};
+  map.layers.forEach((l, i) => l.forEach((id, j) => { pos[id] = { x: ((j + 0.5) / l.length) * 100, y: i * RM_ROW }; }));
+  const H = (map.layers.length - 1) * RM_ROW + RM_BOX;
+  return (
+    <div className="rm-graph" style={{ height: H }}>
+      <svg className="rm-lines" viewBox={`0 0 100 ${H}`} preserveAspectRatio="none" aria-hidden="true">
+        {map.edges.map(([a, b]) => {
+          const A = pos[a], B = pos[b];
+          const y1 = A.y + RM_BOX, y2 = B.y, my = (y1 + y2) / 2;
+          return <path key={a + b} d={`M ${A.x} ${y1} C ${A.x} ${my}, ${B.x} ${my}, ${B.x} ${y2}`} vectorEffect="non-scaling-stroke" />;
+        })}
+      </svg>
+      {map.layers.map((l, i) => l.map((id) => {
+        const p = findPaper(s, id)!;
+        const done = (s.reading[id]?.step || 0) >= 1;
+        return (
+          <button key={id} className={`rm-node tap ${done ? 'done' : ''}`} style={{ left: `${pos[id].x}%`, top: pos[id].y, height: RM_BOX, width: `calc(${100 / l.length}% - 10px)` }} onClick={() => s.push('paper', { id })}>
+            <span className="rm-step">{done ? <Check size={11} strokeWidth={3.5} /> : digits(s.lang, i + 1)}</span>
+            <b>{shortTitle(p.title)}</b>
+            <small>{p.year}</small>
+          </button>
+        );
+      }))}
+    </div>
+  );
+}
+
+function ReadmapOut({ o }: { o: Output }) {
+  const s = useStore();
+  const m = READ_MAPS.find((x) => x.id === o.params.map)!;
+  const all = m.layers.flat();
+  const next = all.find((id) => (s.reading[id]?.step || 0) === 0);
+  const done = all.length - all.filter((id) => (s.reading[id]?.step || 0) === 0).length;
+  return (
+    <>
+      <OutHead o={o} title={s.x(m.topic)} meta={<>
+        <span>{s.tt(`${all.length} papers`, `${digits('bn', all.length)}টি পেপার`)}</span><span className="dot-sep" />
+        <span>{s.tt(`${m.layers.length} steps`, `${digits('bn', m.layers.length)}টি ধাপ`)}</span><span className="dot-sep" />
+        <span>{s.tt(`${done} read`, `${digits('bn', done)}টি পড়া`)}</span>
+      </>} />
+      <div className="pad-x">
+        <p className="rm-hint">{s.tt('Read top to bottom. Tap a box to open it.', 'উপর থেকে নিচে পড়ুন। বক্সে চাপলে খুলবে।')}</p>
+        <ReadMapGraph map={m} />
+        {next && <Btn block size="lg" className="mt16" icon={<ArrowRight size={18} />} onClick={() => s.push('paper', { id: next })}>{done ? s.tt('Continue reading', 'পড়া চালিয়ে যান') : s.tt('Start with step 1', 'ধাপ ১ দিয়ে শুরু')}</Btn>}
+        <div className="sec-head"><h3>{s.tt('In order', 'ক্রমানুসারে')}</h3></div>
+        <ol className="rm-list">
+          {m.layers.map((l, i) => (
+            <li key={i}>
+              <span className="rm-list-head"><span className="rm-step">{digits(s.lang, i + 1)}</span>{l.length > 1 ? s.tt('Read together', 'একসাথে পড়ুন') : s.tt(`Step ${i + 1}`, `ধাপ ${digits('bn', i + 1)}`)}</span>
+              {l.map((id) => {
+                const p = findPaper(s, id)!;
+                const read = (s.reading[id]?.step || 0) >= 1;
+                return (
+                  <button key={id} className="res-row tap rm-row" onClick={() => s.push('paper', { id })}>
+                    <span className="res-text"><b>{p.title}</b><span className="sub">{s.x(m.why[id])}</span></span>
+                    {read ? <CheckCircle2 size={18} className="rm-read" /> : <ChevronRight size={18} className="muted" />}
+                  </button>
+                );
+              })}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </>
   );
 }

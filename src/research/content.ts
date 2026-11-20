@@ -35,6 +35,7 @@ export const CLUBS: Club[] = [
 
 /* ---------------- tools ---------------- */
 export const TOOL_META: Record<ToolId, { name: L; short: L; desc: L; unit: L; units: L; hue: number }> = {
+  readmap: { name: b('Reading map', 'রিডিং ম্যাপ'), short: b('Reading map', 'রিডিং ম্যাপ'), desc: b('Pick a topic. Get the papers to read, in order, as a map.', 'একটি টপিক বাছুন। কোন পেপার কোন ক্রমে পড়বেন, ম্যাপে পাবেন।'), unit: b('map', 'ম্যাপ'), units: b('maps', 'ম্যাপ'), hue: 268 },
   landscape: { name: b('Research landscape map', 'রিসার্চ ল্যান্ডস্কেপ ম্যাপ'), short: b('Landscape map', 'ল্যান্ডস্কেপ ম্যাপ'), desc: b('Pick a topic. Get the main approaches, key papers, how they connect, and open questions.', 'একটি টপিক বাছুন। পাবেন মূল পদ্ধতি, প্রধান পেপার, সংযোগ ও খোলা প্রশ্ন।'), unit: b('map', 'ম্যাপ'), units: b('maps', 'ম্যাপ'), hue: 172 },
   compare: { name: b('Paper comparison matrix', 'পেপার তুলনা ম্যাট্রিক্স'), short: b('Compare papers', 'পেপার তুলনা'), desc: b('Methods, datasets, results, strengths and weaknesses side by side, with source references.', 'পদ্ধতি, ডেটাসেট, ফল, শক্তি ও দুর্বলতা পাশাপাশি, সূত্রসহ।'), unit: b('comparison', 'তুলনা'), units: b('comparisons', 'তুলনা'), hue: 210 },
   claim: { name: b('Claim & evidence check', 'দাবি ও প্রমাণ যাচাই'), short: b('Claim check', 'দাবি যাচাই'), desc: b('See which experiment supports a claim, what it assumes, and what it does not show.', 'কোন পরীক্ষা দাবিকে সমর্থন করে, কী ধরে নেয়, আর কী দেখায় না।'), unit: b('check', 'যাচাই'), units: b('checks', 'যাচাই'), hue: 36 },
@@ -211,6 +212,13 @@ export const ROADMAPS: Record<string, Roadmap> = {
 
 /* ---------------- job pipelines (simulated) ---------------- */
 export const JOB_STEPS: Record<ToolId, L[]> = {
+  readmap: [
+    b('Finding key papers on OpenAlex', 'OpenAlex-এ মূল পেপার খোঁজা'),
+    b('Reading citation links', 'সাইটেশন সংযোগ পড়া'),
+    b('Putting papers in order', 'পেপার ক্রমে সাজানো'),
+    b('Writing why each one matters', 'প্রতিটি কেন দরকার লেখা'),
+    b('Saving your map', 'আপনার ম্যাপ সেভ হচ্ছে'),
+  ],
   landscape: [
     b('Searching OpenAlex', 'OpenAlex-এ খোঁজা হচ্ছে'),
     b('Ranking by relevance and citations', 'প্রাসঙ্গিকতা ও সাইটেশনে সাজানো'),
@@ -249,9 +257,77 @@ export const COSTS = {
   cardsGenerated: 18,
   cardOpens: 48210,
   perTool: [
+    { tool: 'readmap' as ToolId, runs: 296, avg: 0.05, max: 0.14, cacheHits: 0.52 },
     { tool: 'landscape' as ToolId, runs: 412, avg: 0.06, max: 0.19, cacheHits: 0.38 },
     { tool: 'compare' as ToolId, runs: 638, avg: 0.09, max: 0.31, cacheHits: 0.21 },
     { tool: 'claim' as ToolId, runs: 529, avg: 0.04, max: 0.12, cacheHits: 0.17 },
     { tool: 'roadmap' as ToolId, runs: 171, avg: 0.11, max: 0.28, cacheHits: 0.44 },
   ],
 };
+
+/* ---------------- reading maps (premium tool) ----------------
+   A topic becomes layers of papers. Papers in one layer can be read together;
+   an edge [a, b] means "read a before b". */
+export interface ReadMap { id: string; topic: L; keywords: string[]; layers: string[][]; edges: [string, string][]; why: Record<string, L> }
+
+export const READ_MAPS: ReadMap[] = [
+  {
+    id: 'llm', topic: b('Large language models', 'বড় ভাষা মডেল'), keywords: ['llm', 'large', 'language model', 'gpt', 'chat', 'বড়', 'ভাষা মডেল'],
+    layers: [['p1'], ['p7', 'p8'], ['p6', 'p17'], ['p11', 'p2']],
+    edges: [['p1', 'p7'], ['p1', 'p8'], ['p8', 'p6'], ['p8', 'p17'], ['p6', 'p11'], ['p17', 'p2']],
+    why: {
+      p1: b('The Transformer. Everything starts here.', 'ট্রান্সফর্মার। সবকিছুর শুরু।'),
+      p7: b('Pretrain once, reuse for many tasks.', 'একবার প্রিট্রেন, অনেক কাজে ব্যবহার।'),
+      p8: b('Big models learn from a few examples.', 'বড় মডেল অল্প উদাহরণে শেখে।'),
+      p6: b('How size, data and compute trade off.', 'আকার, ডেটা ও কম্পিউটের সম্পর্ক।'),
+      p17: b('How chat models learn to follow you.', 'চ্যাট মডেল কীভাবে নির্দেশ মানে।'),
+      p11: b('Fix the scaling rules: more data.', 'স্কেলিং নিয়ম ঠিক করা: বেশি ডেটা।'),
+      p2: b('Make models reason step by step.', 'ধাপে ধাপে যুক্তি করানো।'),
+    },
+  },
+  {
+    id: 'slm', topic: b('Small language models', 'ছোট ভাষা মডেল'), keywords: ['small', 'tiny', 'slm', 'efficient', 'mobile', 'on-device', 'distil', 'ছোট'],
+    layers: [['p1'], ['p6', 'p7'], ['p11', 'p13'], ['p9', 'p10', 'p14']],
+    edges: [['p1', 'p6'], ['p1', 'p7'], ['p6', 'p11'], ['p7', 'p13'], ['p11', 'p9'], ['p11', 'p10'], ['p13', 'p14']],
+    why: {
+      p1: b('The architecture small models still use.', 'ছোট মডেলও এই আর্কিটেকচার ব্যবহার করে।'),
+      p6: b('Why size is not everything.', 'কেন আকারই সব নয়।'),
+      p7: b('The encoder later shrunk by distillation.', 'যে এনকোডার পরে ছোট করা হয়।'),
+      p11: b('Smaller models, trained longer, win.', 'ছোট মডেল, বেশি ট্রেন, ভালো ফল।'),
+      p13: b('Shrink a big model, keep most skill.', 'বড় মডেল ছোট করে দক্ষতা রাখা।'),
+      p9: b('Tiny models, simple data, fluent text.', 'ছোট মডেল, সহজ ডেটা, সাবলীল লেখা।'),
+      p10: b('Better data beats more parameters.', 'ভালো ডেটা বেশি প্যারামিটারের চেয়ে ভালো।'),
+      p14: b('Design choices for phones.', 'ফোনের জন্য ডিজাইন।'),
+    },
+  },
+  {
+    id: 'finetune', topic: b('Fine-tuning LLMs', 'এলএলএম ফাইন-টিউনিং'), keywords: ['fine', 'tun', 'lora', 'adapt', 'instruct', 'ফাইন', 'টিউন'],
+    layers: [['p1'], ['p8'], ['p17', 'p5'], ['p12']],
+    edges: [['p1', 'p8'], ['p8', 'p17'], ['p8', 'p5'], ['p5', 'p12']],
+    why: {
+      p1: b('The model you will be tuning.', 'যে মডেল টিউন করবেন।'),
+      p8: b('Why we adapt big pretrained models.', 'কেন বড় প্রিট্রেইনড মডেল মানিয়ে নিই।'),
+      p17: b('Tuning with human feedback.', 'মানুষের ফিডব্যাকে টিউন।'),
+      p5: b('Tune a tiny set of new weights.', 'অল্প নতুন ওয়েট টিউন।'),
+      p12: b('LoRA on one GPU with 4-bit models.', '৪-বিট মডেলে এক জিপিইউতে লোরা।'),
+    },
+  },
+  {
+    id: 'agents', topic: b('AI agents', 'এআই এজেন্ট'), keywords: ['agent', 'tool', 'react', 'rag', 'retriev', 'reason', 'এজেন্ট'],
+    layers: [['p8'], ['p2', 'p15'], ['p4'], ['p16']],
+    edges: [['p8', 'p2'], ['p8', 'p15'], ['p2', 'p4'], ['p15', 'p4'], ['p4', 'p16']],
+    why: {
+      p8: b('Models that follow prompts.', 'প্রম্পট মেনে চলা মডেল।'),
+      p2: b('Thinking step by step.', 'ধাপে ধাপে চিন্তা।'),
+      p15: b('Look things up before answering.', 'উত্তরের আগে তথ্য খোঁজা।'),
+      p4: b('Think, act, observe, repeat.', 'ভাবো, করো, দেখো, আবার করো।'),
+      p16: b('Models that learn to call tools.', 'টুল কল করতে শেখা মডেল।'),
+    },
+  },
+];
+
+export function matchReadMap(q: string) {
+  const n = q.trim().toLowerCase();
+  if (!n) return null;
+  return READ_MAPS.find((m) => m.topic.en.toLowerCase() === n || m.topic.bn === q.trim() || m.keywords.some((k) => n.includes(k))) || null;
+}

@@ -12,7 +12,7 @@ import { Scene, SCENE_BG } from '../scenes';
 import { Avatar, Btn, Chip, Empty, Header, Level, Name, Progress, Seg, Sheet, TopBar, TopicChips, TopicTag, openCreator } from '../ui';
 import { COLLECTION, PX, SOURCE_LABEL, type Prereq, type PaperX, type SourceId } from '../research/data';
 import { CLUBS, PATHS } from '../research/content';
-import { OutputRow, PlanCard, PausedBanner, ToolCard, TOOL_ORDER, ToolIcon } from './tools';
+import { OutputRow, PlanCard, PausedBanner, ToolCard, toolsFor, ToolIcon } from './tools';
 
 /* ---------------- shared bits ---------------- */
 
@@ -261,7 +261,7 @@ export function ToolsHub() {
       {s.aiPaused && <PausedBanner />}
       <div className="sec-head"><h2>{s.tt('Research tools', 'রিসার্চ টুলস')}</h2><span className="later">{s.tt('Later release', 'পরের রিলিজ')}</span></div>
       <p className="hub-lede">{s.tt('Each tool runs a bounded job and saves a structured result you can reopen anytime. It is not a chat.', 'প্রতিটি টুল একটি সীমিত কাজ চালায় এবং একটি কাঠামোবদ্ধ ফল সেভ করে, যা যেকোনো সময় খোলা যায়। এটি চ্যাট নয়।')}</p>
-      <div className="list">{TOOL_ORDER.map((t) => <ToolCard key={t} tool={t} />)}</div>
+      <div className="list">{toolsFor(s.navMode).map((t) => <ToolCard key={t} tool={t} />)}</div>
       <div className="sec-head"><h2>{s.tt('Saved outputs', 'সেভ করা আউটপুট')}</h2></div>
       {s.outputs.length ? <div className="out-list">{s.outputs.map((o) => <OutputRow key={o.id} o={o} />)}</div> : (
         <Empty icon={<Sparkles size={26} />} title={s.tt('Your maps, comparisons and roadmaps will appear here', 'আপনার ম্যাপ, তুলনা ও রোডম্যাপ এখানে দেখাবে')} />

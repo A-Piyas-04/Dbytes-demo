@@ -10,8 +10,8 @@ export type NavMode = 'classic' | 'v2' | 'v3';
 export interface ReadState { step: 0 | 1 | 2 | 3; note: string; when: string }
 export interface Output { id: string; tool: ToolId; when: string; plan: Plan; params: Record<string, any>; cached?: boolean }
 const seedUsage = (): Record<Plan, Record<ToolId, number>> => ({
-  free: { landscape: 0, compare: 1, claim: 0, roadmap: 0 },
-  premium: { landscape: 1, compare: 2, claim: 3, roadmap: 0 },
+  free: { readmap: 0, landscape: 0, compare: 1, claim: 0, roadmap: 0 },
+  premium: { readmap: 1, landscape: 1, compare: 2, claim: 3, roadmap: 0 },
 });
 const seedReading = (): Record<string, ReadState> => ({
   p5: { step: 2, note: 'Rank 8 on q, v is enough. Try on RoBERTa-base in Colab.', when: 'Nov 18' },
@@ -231,7 +231,7 @@ function useStoreValue() {
   const setPlan = (p: Plan) => setPlanState(p);
   const left = (tool: ToolId) => Math.max(0, LIMITS[plan][tool] - usage[plan][tool]);
   const spend = (tool: ToolId) => setUsage((u) => ({ ...u, [plan]: { ...u[plan], [tool]: u[plan][tool] + 1 } }));
-  const resetUsage = () => setUsage({ free: { landscape: 0, compare: 0, claim: 0, roadmap: 0 }, premium: { landscape: 0, compare: 0, claim: 0, roadmap: 0 } });
+  const resetUsage = () => setUsage({ free: { readmap: 0, landscape: 0, compare: 0, claim: 0, roadmap: 0 }, premium: { readmap: 0, landscape: 0, compare: 0, claim: 0, roadmap: 0 } });
   const addOutput = (o: Output) => setOutputs((x) => [o, ...x]);
   const setReading = (id: string, patch: Partial<ReadState>) =>
     setReadingState((r) => ({ ...r, [id]: { ...(r[id] || { step: 0, note: '' }), ...patch, when: 'Nov 20' } }));

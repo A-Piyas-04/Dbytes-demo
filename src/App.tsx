@@ -26,7 +26,7 @@ function renderScreen(sc: Screen, mode: NavMode) {
     case 'note': return <NoteReader id={p.id} />;
     case 'paper':
       if (!PX[p.id]) return <PaperDetail id={p.id} />;
-      if (mode === 'v2') return <SimplePaper id={p.id} />;
+      if (mode === 'v2') return <SimplePaper id={p.id} tab={p.tab} />;
       if (mode === 'v3') return <FullPaper id={p.id} />;
       return <PaperCardScreen id={p.id} tab={p.tab} />;
     case 'rPapers': case 'rPaths': case 'rTools': case 'rLibrary': case 'rResults': return <ResearchSection name={sc.name} />;
@@ -271,13 +271,23 @@ function useJumps() {
     ['Settings', () => s.jump('profile', [['settings']])],
     ['Sign in', () => { s.jump('home'); setTimeout(() => s.setAuthed(false), 30); }],
   ];
+  /** Opens a finished reading map (adds one to saved outputs the first time). */
+  const openDemoMap = () => {
+    const id = 'o-demo-map';
+    if (!s.outputs.some((o) => o.id === id)) s.addOutput({ id, tool: 'readmap', when: 'Nov 20', plan: s.plan, params: { map: 'llm' } });
+    s.jump('research', [['output', { id }]]);
+  };
   const v2Research: [string, () => void][] = [
     ['Research home', () => s.jump('research')],
     ['Paper', () => s.jump('research', [['paper', { id: 'p5' }]])],
-    ['Learn first', () => s.jump('research', [['paper', { id: 'p1' }]])],
-    ['Compare papers', () => s.jump('research', [['paper', { id: 'p5' }], ['tool', { tool: 'compare', papers: ['p5', 'p12', 'p13'] }]])],
-    ['Limit reached', () => { s.jump('research', [['paper', { id: 'p5' }]]); setTimeout(() => s.setSheet({ name: 'limit', params: { tool: 'compare' } }), 60); }],
-    ['Premium plans', () => s.jump('research', [['premium', { from: 'compare' }]])],
+    ['Figures', () => s.jump('research', [['paper', { id: 'p1', tab: 'figures' }]])],
+    ['Figure reader', () => s.jump('research', [['paper', { id: 'p1', tab: 'figures' }], ['figures', { id: 'p1', i: 0 }]])],
+    ['Reviews & discussion', () => s.jump('research', [['paper', { id: 'p5', tab: 'discuss' }]])],
+    ['Reproduction roadmap', () => s.jump('research', [['paper', { id: 'p1' }]])],
+    ['Reading map', () => s.jump('research', [['tool', { tool: 'readmap' }]])],
+    ['Reading map result', () => openDemoMap()],
+    ['Roadmap limit', () => { s.jump('research', [['paper', { id: 'p1' }]]); setTimeout(() => s.setSheet({ name: 'limit', params: { tool: 'roadmap' } }), 60); }],
+    ['Premium plans', () => s.jump('research', [['premium', { from: 'roadmap' }]])],
   ];
   const v3Research: [string, () => void][] = [
     ['Research home', () => s.jump('research')],
@@ -295,6 +305,8 @@ function useJumps() {
     ['Paper club', () => s.jump('research', [['clubs'], ['club', { id: 'club1' }]])],
     ['My library', () => s.jump('research', [['rLibrary']])],
     ['AI tools', () => s.jump('research', [['rTools']])],
+    ['Reading map', () => s.jump('research', [['rTools'], ['tool', { tool: 'readmap' }]])],
+    ['Reading map result', () => openDemoMap()],
     ['Landscape map', () => s.jump('research', [['rTools'], ['tool', { tool: 'landscape' }]])],
     ['Compare papers', () => s.jump('research', [['rTools'], ['tool', { tool: 'compare', papers: ['p5', 'p12', 'p13'] }]])],
     ['Claim check', () => s.jump('research', [['rTools'], ['tool', { tool: 'claim', paper: 'p5' }]])],

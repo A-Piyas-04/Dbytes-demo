@@ -9,7 +9,7 @@ export const b = (en: string, bn: string): L => ({ en, bn });
 
 export type SourceId = 'openalex' | 's2' | 'hf' | 'openreview';
 export type Difficulty = 'beginner' | 'intermediate' | 'advanced';
-export type ToolId = 'landscape' | 'compare' | 'claim' | 'roadmap';
+export type ToolId = 'readmap' | 'landscape' | 'compare' | 'claim' | 'roadmap';
 export type Plan = 'free' | 'premium';
 
 export const SOURCE_LABEL: Record<SourceId, string> = {
@@ -557,8 +557,8 @@ export const COLLECTION = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9',
 /* ---------------- plans, quotas, scope ---------------- */
 
 export const LIMITS: Record<Plan, Record<ToolId, number>> = {
-  free: { landscape: 1, compare: 1, claim: 1, roadmap: 1 },
-  premium: { landscape: 4, compare: 8, claim: 10, roadmap: 3 },
+  free: { readmap: 1, landscape: 1, compare: 1, claim: 1, roadmap: 1 },
+  premium: { readmap: 5, landscape: 4, compare: 8, claim: 10, roadmap: 3 },
 };
 export const SCOPE: Record<Plan, { mapPapers: number; comparePapers: number; pagesPerPaper: number }> = {
   free: { mapPapers: 8, comparePapers: 3, pagesPerPaper: 30 },
