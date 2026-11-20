@@ -79,7 +79,7 @@ export function LangToggle() {
 export function TopBar({ children, noSearch }: { children?: React.ReactNode; noSearch?: boolean }) {
   const s = useStore();
   const unread = !s.activityRead && s.activity.some((a) => a.unread);
-  const v2 = s.navMode === 'v2';
+  const v2 = s.tabNav;
   return (
     <header className="topbar">
       <Wordmark size={v2 ? 27 : 30} />

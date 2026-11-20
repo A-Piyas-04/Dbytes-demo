@@ -6,7 +6,7 @@ import {
 import { tr, tx, type Key } from './i18n';
 import { NEW_PAPERS, LIMITS, type Plan, type ToolId } from './research/data';
 
-export type NavMode = 'v2' | 'classic';
+export type NavMode = 'classic' | 'v2' | 'v3';
 export interface ReadState { step: 0 | 1 | 2 | 3; note: string; when: string }
 export interface Output { id: string; tool: ToolId; when: string; plan: Plan; params: Record<string, any>; cached?: boolean }
 const seedUsage = (): Record<Plan, Record<ToolId, number>> => ({
@@ -217,6 +217,8 @@ function useStoreValue() {
 
   // research v2 + plans
   const [navMode, setNavMode] = useState<NavMode>('v2');
+  const tabNav = navMode !== 'classic';
+  const [howSeen, setHowSeen] = useState(false);
   const [plan, setPlanState] = useState<Plan>('free');
   const [usage, setUsage] = useState(seedUsage);
   const [aiPaused, setAiPaused] = useState(false);
@@ -245,10 +247,10 @@ function useStoreValue() {
     if (navMode === 'classic') setTab('explore');
     else push('explore');
   };
-  const openPractice = () => (navMode === 'v2' ? setTab('practice') : push('practice'));
+  const openPractice = () => (tabNav ? setTab('practice') : push('practice'));
 
   const resetDemo = () => {
-    setUsage(seedUsage()); setReadingState(seedReading()); setKnown(new Set()); setOutputs(seedOutputs()); setClubs(new Set(['club2'])); setFigAnswers({}); setAiPaused(false); setResearchSeg('discover');
+    setUsage(seedUsage()); setReadingState(seedReading()); setKnown(new Set()); setOutputs(seedOutputs()); setClubs(new Set(['club2'])); setFigAnswers({}); setAiPaused(false); setResearchSeg('discover'); setHowSeen(false);
     setFollows([]); setLikes(new Set(['r2', 'n2'])); setSaves(new Set(['i1', 'p1', 'n1', 'c3']));
     setHiddenPosts(new Set()); setBlocked(['spam.bot']); setExtraComments({});
     setMe(ME); setMyPosts(MY_POSTS_SEED); setMyPapers(MY_PAPERS_SEED); setMyCourses([]);
@@ -259,7 +261,7 @@ function useStoreValue() {
 
   return {
     lang, setLang, t, x, tt,
-    navMode, setNavMode, plan, setPlan, usage, left, spend, resetUsage, aiPaused, setAiPaused,
+    navMode, setNavMode, tabNav, howSeen, setHowSeen, plan, setPlan, usage, left, spend, resetUsage, aiPaused, setAiPaused,
     reading, setReading, known, toggleKnown, markKnown, researchSeg, setResearchSeg, outputs, addOutput, clubs, toggleClub, figAnswers, answerFig, payMethod, setPayMethod,
     goExplore, openPractice,
     authed, setAuthed, admin, setAdmin,

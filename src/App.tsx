@@ -15,13 +15,22 @@ import { Admin } from './admin';
 import { ResearchHome, PaperCardScreen, FigureReader, PrereqScreen, ReviewsScreen, PathScreen, ClubsScreen, ClubScreen, NoteSheet } from './screens/research';
 import { ToolSetup, JobScreen, OutputScreen, LimitSheet, PausedSheet, PremiumScreen, CheckoutSheet, PaySuccess, SubscriptionScreen } from './screens/tools';
 import { PX } from './research/data';
+import { SimpleResearchHome, SimplePaper } from './screens/research-v2';
+import { FullResearchHome, FullPaper, PaperPart, ResearchSection } from './screens/research-v3';
+import type { NavMode } from './store';
 
-function renderScreen(sc: Screen) {
+function renderScreen(sc: Screen, mode: NavMode) {
   const p = sc.params as any;
   switch (sc.name) {
     case 'activity': return <ActivityScreen />;
     case 'note': return <NoteReader id={p.id} />;
-    case 'paper': return PX[p.id] ? <PaperCardScreen id={p.id} tab={p.tab} /> : <PaperDetail id={p.id} />;
+    case 'paper':
+      if (!PX[p.id]) return <PaperDetail id={p.id} />;
+      if (mode === 'v2') return <SimplePaper id={p.id} />;
+      if (mode === 'v3') return <FullPaper id={p.id} />;
+      return <PaperCardScreen id={p.id} tab={p.tab} />;
+    case 'rPapers': case 'rPaths': case 'rTools': case 'rLibrary': case 'rResults': return <ResearchSection name={sc.name} />;
+    case 'pFigures': case 'pRelated': case 'pDiscuss': return <PaperPart name={sc.name} id={p.id} />;
     case 'explore': return <ExploreScreen pushed />;
     case 'researchHub': return <ResearchHome pushed />;
     case 'figures': return <FigureReader key={sc.key} id={p.id} i={p.i} />;
@@ -69,13 +78,13 @@ function renderScreen(sc: Screen) {
   }
 }
 
-const ROOTS: Record<Tab, () => React.ReactElement> = {
+const ROOTS: Record<Tab, (mode: NavMode) => React.ReactElement> = {
   home: () => <HomeScreen />,
   explore: () => <ExploreScreen />,
   learn: () => <LearnScreen />,
   profile: () => <ProfileScreen />,
   practice: () => <PracticeScreen root />,
-  research: () => <ResearchHome />,
+  research: (mode) => (mode === 'v2' ? <SimpleResearchHome /> : mode === 'v3' ? <FullResearchHome /> : <ResearchHome />),
 };
 const ALL_TABS: Tab[] = ['home', 'explore', 'learn', 'profile', 'practice', 'research'];
 
@@ -94,14 +103,14 @@ function TabLayer({ tab }: { tab: Tab }) {
         return (
           <ActiveCtx.Provider key={l.key} value={isTab && i === topIdx && !leaving}>
             <section className={`screen ${i > 0 ? 'pushed' : ''} ${under ? 'under' : ''}`} aria-hidden={!top && !(i === topIdx)}>
-              {l.sc ? renderScreen(l.sc) : ROOTS[tab]()}
+              {l.sc ? renderScreen(l.sc, s.navMode) : ROOTS[tab](s.navMode)}
             </section>
           </ActiveCtx.Provider>
         );
       })}
       {leaving && (
         <ActiveCtx.Provider value={false}>
-          <section className="screen pushed leaving" aria-hidden="true">{renderScreen(leaving)}</section>
+          <section className="screen pushed leaving" aria-hidden="true">{renderScreen(leaving, s.navMode)}</section>
         </ActiveCtx.Provider>
       )}
     </div>
@@ -110,7 +119,7 @@ function TabLayer({ tab }: { tab: Tab }) {
 
 function BottomNav() {
   const s = useStore();
-  const v2 = s.navMode === 'v2';
+  const v2 = s.tabNav;
   const items: { id: Tab | 'create'; icon: React.ReactNode; label: string }[] = v2 ? [
     { id: 'home', icon: <Clapperboard size={23} />, label: s.tt('Reels', 'রিল') },
     { id: 'learn', icon: <GraduationCap size={25} />, label: s.t('learn') },
@@ -241,7 +250,7 @@ function PhoneApp() {
 
 function useJumps() {
   const s = useStore();
-  const v2 = s.navMode === 'v2';
+  const v2 = s.tabNav;
   const rs = (seg: 'discover' | 'tools' | 'library', screens: [string, Record<string, any>?][] = []) => {
     s.setResearchSeg(seg);
     if (v2) s.jump('research', screens);
@@ -262,7 +271,39 @@ function useJumps() {
     ['Settings', () => s.jump('profile', [['settings']])],
     ['Sign in', () => { s.jump('home'); setTimeout(() => s.setAuthed(false), 30); }],
   ];
-  const research: [string, () => void][] = [
+  const v2Research: [string, () => void][] = [
+    ['Research home', () => s.jump('research')],
+    ['Paper', () => s.jump('research', [['paper', { id: 'p5' }]])],
+    ['Learn first', () => s.jump('research', [['paper', { id: 'p1' }]])],
+    ['Compare papers', () => s.jump('research', [['paper', { id: 'p5' }], ['tool', { tool: 'compare', papers: ['p5', 'p12', 'p13'] }]])],
+    ['Limit reached', () => { s.jump('research', [['paper', { id: 'p5' }]]); setTimeout(() => s.setSheet({ name: 'limit', params: { tool: 'compare' } }), 60); }],
+    ['Premium plans', () => s.jump('research', [['premium', { from: 'compare' }]])],
+  ];
+  const v3Research: [string, () => void][] = [
+    ['Research home', () => s.jump('research')],
+    ['Papers', () => s.jump('research', [['rPapers']])],
+    ['Paper', () => s.jump('research', [['paper', { id: 'p5' }]])],
+    ['Figures', () => s.jump('research', [['paper', { id: 'p1' }], ['pFigures', { id: 'p1' }]])],
+    ['Figure reader', () => s.jump('research', [['paper', { id: 'p1' }], ['figures', { id: 'p1', i: 0 }]])],
+    ['Learn before reading', () => s.jump('research', [['paper', { id: 'p1' }], ['prereqs', { id: 'p1' }]])],
+    ['Related papers', () => s.jump('research', [['paper', { id: 'p1' }], ['pRelated', { id: 'p1' }]])],
+    ['Reviews', () => s.jump('research', [['paper', { id: 'p5' }], ['reviews', { id: 'p5' }]])],
+    ['Discussion', () => s.jump('research', [['paper', { id: 'p5' }], ['pDiscuss', { id: 'p5' }]])],
+    ['Reading paths', () => s.jump('research', [['rPaths']])],
+    ['Reading path', () => s.jump('research', [['rPaths'], ['path', { id: 'path2' }]])],
+    ['Paper clubs', () => s.jump('research', [['clubs']])],
+    ['Paper club', () => s.jump('research', [['clubs'], ['club', { id: 'club1' }]])],
+    ['My library', () => s.jump('research', [['rLibrary']])],
+    ['AI tools', () => s.jump('research', [['rTools']])],
+    ['Landscape map', () => s.jump('research', [['rTools'], ['tool', { tool: 'landscape' }]])],
+    ['Compare papers', () => s.jump('research', [['rTools'], ['tool', { tool: 'compare', papers: ['p5', 'p12', 'p13'] }]])],
+    ['Claim check', () => s.jump('research', [['rTools'], ['tool', { tool: 'claim', paper: 'p5' }]])],
+    ['Roadmap', () => s.jump('research', [['rTools'], ['tool', { tool: 'roadmap', paper: 'p5' }]])],
+    ['Saved results', () => s.jump('research', [['rResults']])],
+    ['Premium plans', () => s.jump('research', [['premium', { from: 'compare' }]])],
+    ['Subscription', () => s.jump('profile', [['settings'], ['subscription']])],
+  ];
+  const classicResearch: [string, () => void][] = [
     ['Research home', () => rs('discover')],
     ['Paper Card', () => rs('discover', [['paper', { id: 'p5' }]])],
     ['Figure reader', () => rs('discover', [['paper', { id: 'p1', tab: 'figures' }], ['figures', { id: 'p1', i: 0 }]])],
@@ -281,6 +322,7 @@ function useJumps() {
     ['Premium plans', () => rs('tools', [['premium', { from: 'compare' }]])],
     ['Subscription', () => s.jump('profile', [['settings'], ['subscription']])],
   ];
+  const research = s.navMode === 'v2' ? v2Research : s.navMode === 'v3' ? v3Research : classicResearch;
   return { app, research };
 }
 
@@ -298,7 +340,8 @@ function useDeepLink() {
     done.current = true;
     const q = new URLSearchParams(location.search);
     if (q.get('plan') === 'premium') s.setPlan('premium');
-    if (q.get('nav') === 'classic') s.setNavMode('classic');
+    const nav = q.get('nav');
+    if (nav === 'classic' || nav === 'v2' || nav === 'v3') s.setNavMode(nav);
     if (q.get('lang') === 'bn' || q.get('lang') === 'en') s.setLang(q.get('lang') as 'en' | 'bn');
     if (q.get('paused') === '1') s.setAiPaused(true);
     const j = q.get('jump');
@@ -307,7 +350,7 @@ function useDeepLink() {
     if (sc) {
       const params: Record<string, any> = {};
       q.forEach((v, k) => { if (!['screen', 'plan', 'nav', 'lang', 'paused', 'jump'].includes(k)) { try { params[k] = JSON.parse(v); } catch { params[k] = v; } } });
-      setTimeout(() => s.jump(q.get('nav') === 'classic' ? 'explore' : 'research', [[sc, params]]), 80);
+      setTimeout(() => s.jump(nav === 'classic' ? 'explore' : 'research', [[sc, params]]), 80);
     }
   }, []);
 }
@@ -343,11 +386,11 @@ function DemoPanel() {
         <h3>Simulate a user</h3>
         <Q2 title="Plan" value={s.plan} tone="plan" options={[['Free user', 'free'], ['Premium user', 'premium']]} onChange={(v) => { s.setPlan(v); s.toast(v === 'premium' ? 'Now simulating a Premium user' : 'Now simulating a Free user'); }} />
         <Q2 title="Platform AI budget" value={s.aiPaused} options={[['Within budget', false], ['Budget reached', true]]} onChange={s.setAiPaused} />
-        <Q2 title="Navigation" value={s.navMode} options={[['v2: Research tab', 'v2'], ['Current: Explore', 'classic']]} onChange={(v) => { s.setNavMode(v); s.jump(v === 'v2' ? 'research' : 'home'); }} />
+        <Q2 title="Version" value={s.navMode} options={[['Explore', 'classic'], ['V2 Simple', 'v2'], ['V3 Full', 'v3']]} onChange={(v) => { s.setNavMode(v); s.jump(v === 'classic' ? 'home' : 'research'); }} />
         <button className="dp-btn ghost sm" onClick={() => { s.resetUsage(); s.toast('Monthly allowances reset'); }}><RotateCcw size={15} /> Reset monthly allowances</button>
       </section>
       <section>
-        <h3>Research (v2)</h3>
+        <h3>Research ({s.navMode === 'classic' ? 'current' : s.navMode.toUpperCase()})</h3>
         <div className="dp-jumps">{research.map(([l, f]) => <button key={l} onClick={f}>{l}</button>)}</div>
       </section>
       <section>

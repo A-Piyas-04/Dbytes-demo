@@ -87,7 +87,7 @@ export function PaperItem({ id, compactView }: { id: string; compactView?: boole
   );
 }
 
-function MiniPaper({ id, right }: { id: string; right?: React.ReactNode }) {
+export function MiniPaper({ id, right }: { id: string; right?: React.ReactNode }) {
   const s = useStore();
   const p = findPaper(s, id);
   if (!p) return null;
@@ -154,7 +154,7 @@ export function ResearchHome({ pushed }: { pushed?: boolean }) {
   );
 }
 
-function Discover() {
+export function Discover({ plain }: { plain?: boolean } = {}) {
   const s = useStore();
   const [topic, setTopic] = useState<TopicId | null>(null);
   const [sort, setSort] = useState<'trending' | 'new' | 'cited'>('trending');
@@ -178,10 +178,10 @@ function Discover() {
       <div className="list pad">
         {ids.slice(0, 3).map((id) => <PaperItem key={id} id={id} />)}
       </div>
-      {!topic && <PathsRow />}
+      {!topic && !plain && <PathsRow />}
       <div className="list pad">
         {ids.slice(3, 7).map((id) => <PaperItem key={id} id={id} />)}
-        {!topic && <ClubsTeaser />}
+        {!topic && !plain && <ClubsTeaser />}
         {ids.slice(7).map((id) => <PaperItem key={id} id={id} />)}
         {!ids.length && <Empty icon={<FileText size={28} />} title={s.tt('No papers in this topic yet', 'এই টপিকে এখনো পেপার নেই')} />}
       </div>
@@ -190,7 +190,7 @@ function Discover() {
   );
 }
 
-function ContinueCard({ id }: { id: string }) {
+export function ContinueCard({ id }: { id: string }) {
   const s = useStore();
   const p = findPaper(s, id)!;
   const r = s.reading[id];
@@ -224,7 +224,7 @@ export function pathProgress(s: Store, papers: string[]) {
   return papers.filter((id) => (s.reading[id]?.step || 0) >= 1).length;
 }
 
-function PathCard({ id }: { id: string }) {
+export function PathCard({ id }: { id: string }) {
   const s = useStore();
   const p = PATHS.find((x) => x.id === id)!;
   const done = pathProgress(s, p.papers);
@@ -253,7 +253,7 @@ function ClubsTeaser() {
   );
 }
 
-function ToolsHub() {
+export function ToolsHub() {
   const s = useStore();
   return (
     <div className="pad tools-hub">
@@ -271,7 +271,7 @@ function ToolsHub() {
   );
 }
 
-function Library() {
+export function Library({ onFind }: { onFind?: () => void } = {}) {
   const s = useStore();
   const [f, setF] = useState<0 | 1 | 2 | 3>(0);
   const tracked = Object.entries(s.reading).filter(([, r]) => r.step > 0).sort((a, b) => dayNum(b[1].when) - dayNum(a[1].when));
@@ -304,7 +304,7 @@ function Library() {
             </button>
           );
         })}
-        {!shown.length && <Empty icon={<BookOpenCheck size={28} />} title={s.tt('Nothing here yet', 'এখনো কিছু নেই')} action={<Btn onClick={() => s.setResearchSeg('discover')}>{s.tt('Find a paper', 'পেপার খুঁজুন')}</Btn>} />}
+        {!shown.length && <Empty icon={<BookOpenCheck size={28} />} title={s.tt('Nothing here yet', 'এখনো কিছু নেই')} action={<Btn onClick={onFind || (() => s.setResearchSeg('discover'))}>{s.tt('Find a paper', 'পেপার খুঁজুন')}</Btn>} />}
       </div>
       {savedPapers.length > 0 && (
         <>
@@ -417,7 +417,7 @@ export function PaperCardScreen({ id, tab: initial }: { id: string; tab?: PTab }
   );
 }
 
-function CardTab({ id }: { id: string }) {
+export function CardTab({ id, noTools }: { id: string; noTools?: boolean }) {
   const s = useStore();
   const p = findPaper(s, id)!;
   const x = PX[id];
@@ -488,12 +488,12 @@ function CardTab({ id }: { id: string }) {
         </div>
       </div>
 
-      <GoDeeper id={id} />
+      {!noTools && <GoDeeper id={id} />}
     </div>
   );
 }
 
-function GoDeeper({ id }: { id: string }) {
+export function GoDeeper({ id }: { id: string }) {
   const s = useStore();
   const x = PX[id];
   const related = [...x.builtBy, ...x.buildsOn].filter((r) => PX[r]).slice(0, 2);
@@ -521,7 +521,7 @@ function GoDeeper({ id }: { id: string }) {
   );
 }
 
-function FiguresTab({ id }: { id: string }) {
+export function FiguresTab({ id }: { id: string }) {
   const s = useStore();
   const p = findPaper(s, id)!;
   const x = PX[id];
@@ -566,7 +566,7 @@ function FiguresTab({ id }: { id: string }) {
   );
 }
 
-function RelatedTab({ id }: { id: string }) {
+export function RelatedTab({ id }: { id: string }) {
   const s = useStore();
   const x = PX[id];
   const paths = PATHS.filter((p) => p.papers.includes(id));
@@ -596,7 +596,7 @@ function RelatedTab({ id }: { id: string }) {
   );
 }
 
-function DiscussTab({ id }: { id: string }) {
+export function DiscussTab({ id }: { id: string }) {
   const s = useStore();
   const x = PX[id];
   const [text, setText] = useState('');
@@ -716,17 +716,19 @@ export function FigureReader({ id, i: start = 0 }: { id: string; i?: number }) {
 
 /* ---------------- Learn before reading ---------------- */
 
+export function openPrereq(s: Store, pr: Prereq) {
+  const l = pr.link;
+  if (l.kind === 'lesson') s.push('lesson', { course: l.course, lesson: l.lesson });
+  else if (l.kind === 'quiz') s.push('quiz', { id: l.id });
+  else { s.markKnown(pr.id); s.push(l.kind === 'reel' ? 'reel' : 'note', { id: l.id }); }
+}
+
 export function PrereqScreen({ id }: { id: string }) {
   const s = useStore();
   const p = findPaper(s, id)!;
   const x = PX[id];
   const ready = x.prereqs.filter((pr) => prereqDone(s, pr)).length;
-  const open = (pr: Prereq) => {
-    const l = pr.link;
-    if (l.kind === 'lesson') s.push('lesson', { course: l.course, lesson: l.lesson });
-    else if (l.kind === 'quiz') s.push('quiz', { id: l.id });
-    else { s.markKnown(pr.id); s.push(l.kind === 'reel' ? 'reel' : 'note', { id: l.id }); }
-  };
+  const open = (pr: Prereq) => openPrereq(s, pr);
   const kindLabel = (pr: Prereq) => {
     const l = pr.link;
     if (l.kind === 'lesson') return <><Layers size={13} /> {s.t('lesson')} <span className="dot-sep" /> {digits(s.lang, l.min)} {s.t('min')}</>;
@@ -888,7 +890,7 @@ export function ClubsScreen() {
   );
 }
 
-function ClubCard({ id }: { id: string }) {
+export function ClubCard({ id }: { id: string }) {
   const s = useStore();
   const c = CLUBS.find((x) => x.id === id)!;
   const host = creatorOf(s, c.host);
@@ -965,7 +967,7 @@ export function ClubScreen({ id }: { id: string }) {
 export function ResearchHubBanner() {
   const s = useStore();
   return (
-    <button className="hub-banner tap" onClick={() => s.push('researchHub')}>
+    <button className="hub-banner tap" onClick={() => (s.tabNav ? s.setTab('research') : s.push('researchHub'))}>
       <span className="hb-icon"><BookOpenCheck size={22} /></span>
       <span className="res-text"><b>{s.tt('Research hub', 'রিসার্চ হাব')}</b><span className="sub">{s.tt('Paper Cards, reading tracker, paths and tools', 'পেপার কার্ড, রিডিং ট্র্যাকার, পাথ ও টুলস')}</span></span>
       <ChevronRight size={18} className="muted" />
